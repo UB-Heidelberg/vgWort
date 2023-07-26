@@ -423,9 +423,9 @@ class VGWortEditorAction {
         $submissionLocale = $submission->getLocale();
         $primaryLocale = AppLocale::getPrimaryLocale();
 
-        $title = $submission->getTitle('de_DE');
+        $title = $submission->getTitle('de');
         if (!isset($title) || $title == '') {
-            $title = $submission->getTitle('en_US');
+            $title = $submission->getTitle('en');
         }
         if (!isset($title) || $title == '') {
             $title = $submission->getTitle($submissionLocale);
@@ -564,21 +564,21 @@ class VGWortEditorAction {
     {
         $submission = $this->getSubmissionByPublicationFormat($publicationFormat);
         $submissionFile = $this->_plugin->getSubmissionFiles($submission, $publicationFormat);
-        return $submissionFile->_current->getData('locale') == 'de_DE';
+        return $submissionFile->_current->getData('locale') == 'de';
     }
 
     function _filterENPublicationFormats($publicationFormat) {
         $submission = $this->getSubmissionByPublicationFormat($publicationFormat);
         $submissionFiles = $this->_plugin->getSubmissionFiles($submission, $publicationFormat);
-        return $submissionFiles->_current->getData('locale') == 'en_US';
+        return $submissionFiles->_current->getData('locale') == 'en';
     }
 
     function _filterDEGalleys($galley) {
-        return $galley->getLocale() == 'de_DE';
+        return $galley->getLocale() == 'de';
     }
 
     function _filterENGalleys($galley) {
-        return $galley->getLocale() == 'en_US';
+        return $galley->getLocale() == 'en';
     }
 
     function _removeNotification($pixelTag) {
