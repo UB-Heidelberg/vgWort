@@ -355,7 +355,7 @@ class VgwortPlugin extends GenericPlugin {
                 break;
             case 'Template::Workflow::Publication':
                 $html =& $args[2];
-                $html = '<tab id="vgwortformtab" label="VG Wort">
+                $html .= '<tab id="vgwortformtab" label="VG Wort">
                     <pkp-form v-bind="components.' . FORM_VGWORT . '" @set="set" />
                     </tab>';
                 break;
@@ -651,16 +651,19 @@ class VgwortPlugin extends GenericPlugin {
 
                 $publication = $submission->getCurrentPublication();
                 $publicationFormats = $publication->getData('publicationFormats');
-                $supportedPublicationFormats = array_filter($publicationFormats, function($publicationFormat) use($submission){
-                    $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat)->_current;
+		$supportedPublicationFormats = array_filter($publicationFormats, function($publicationFormat) use($submission){
+			
+		    $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat)->_current;
                     if (!$submissionFiles) {
                         return false;
-                    }
+		    }
+
                     $megaByte = 1024*1024;
                     if (round((int) $publicationFormat->getFileSize() / $megaByte > 15)) {
                         return false;
-                    }
-                    return $this->getSupportedFileTypes($submissionFiles->getData('mimetype'));
+		    }
+		    return $this->getSupportedFileTypes($submissionFiles->getData('mimetype'));
+			 
                 });
                 
             $templateMgr->addJavaScript(
@@ -1014,13 +1017,23 @@ class VgwortPlugin extends GenericPlugin {
     function getSubmissionFiles($submission, $publicationFormat)
     {
         $publication = $submission->getCurrentPublication();
-        // import('lib.pkp.classes.submission.SubmissionFile'); // File constants
+	// import('lib.pkp.classes.submission.SubmissionFile'); // File constants
+	/*
         $submissionFiles = Repo::submissionFile()->getMany([
             'submissionIds' => [$publication->getData('submissionId')],
             'fileStages' => [SUBMISSION_FILE_PROOF],
             'assocTypes' => [ASSOC_TYPE_PUBLICATION_FORMAT],
             'assocIds' => [$publicationFormat->getId()],
-        ]);
+	]);
+	 */
+        $submissionFiles = Repo::submissionFile()
+            ->getCollector()
+            ->filterBySubmissionIds([$publication->getData('submissionId')])
+            ->filterByAssoc(
+                Application::ASSOC_TYPE_PUBLICATION_FORMAT,
+                [$publicationFormat->getId()]
+            )
+            ->getMany();
         return $submissionFiles;
     }
 
