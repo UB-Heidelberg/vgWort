@@ -32,6 +32,7 @@ use APP\plugins\generic\vgwort\classes\PixelTag;
 use APP\plugins\generic\vgwort\controllers\grid\PixelTagGridHandler;
 
 use APP\facades\Repo;
+use APP\core\Services;
 use APP\core\Application;
 use APP\notification\NotificationManager;
 
@@ -45,7 +46,8 @@ class VgwortPlugin extends GenericPlugin {
         'vgWort::pixeltag::assign',
         'vgWort::pixeltag::remove'
     ];
-
+    
+    const CHAPTER_NUMBER = 'chapterNumber';
     
     /**
      * @copydoc GenericPlugin::register()
@@ -320,15 +322,18 @@ class VgwortPlugin extends GenericPlugin {
             //     $fields =& $params[1];
             //     $fields[] = 'vgWortCardNo';
             case 'chapterdao::getAdditionalFieldNames':
-                $fields =& $args[1];
+                //$fields =& $args[1];
                 $fields[] = 'vgWort::texttype';
                 $fields[] = 'vgWort::pixeltag::assign';
                 $fields[] = 'vgWort::pixeltag::remove';
                 $fields[] = 'vgWort::pixeltag::status';
                 break;
             case 'chapterdao::getLocaleFieldNames':
-                $fields =& $args[1];
-                $fields[] = 'chapterNumber';
+                //error_log("chapterdao::getLocaleFieldNames");
+                //error_log("args[1]: " . var_export($args[1],true));
+                //$fields =& $args[1];
+                //$fields[] = 'chapterNumber';
+                $fields[] = self::CHAPTER_NUMBER;;
                 break;
         }
         return false;
@@ -649,22 +654,61 @@ class VgwortPlugin extends GenericPlugin {
                     ]
                 );
 
-                $publication = $submission->getCurrentPublication();
-                $publicationFormats = $publication->getData('publicationFormats');
-		$supportedPublicationFormats = array_filter($publicationFormats, function($publicationFormat) use($submission){
-			
-		    $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat)->_current;
-                    if (!$submissionFiles) {
-                        return false;
-		    }
+                ////    $publication = $submission->getCurrentPublication();
+                //error_log("publication: " . var_export($publication,true));
+                //$availablePublicationFormats = [];
+                //foreach ($submission->getCurrentPublication()->_data['publicationFormats'] as $format) {
+                //    if ($format->getIsAvailable() && $format->getIsApproved() && !$format->getPhysicalFormat()) {
+                //        $availablePublicationFormats[$format->getId()] = $format;
+                //    }
+                //}
+                //error_log("availablePublicationFormats: " . var_export($availablePublicationFormats,true));
+                //error_log("**************************");
+                //$publicationFormats = $publication->getData('publicationFormats');
+                //error_log("PublicationFormats: " . var_export($publicationFormats,true));
+  //              die();
+                //error_log("publicationFormats: " . var_export($publicationFormats,true));	
+		        //error_log("publicationFormats: gettype: " . var_export(gettype($publicationFormats),true));	
+		        //error_log("publicationFormat: file size " . var_export($publicationFormats[1575]->getFileSize(),true));	
+		        //error_log("publicationFormats: " . var_export($publicationFormats,true));	
+                //die();
+                //$pubFormatFiles = Repo::submissionFile()
+                //    ->getCollector()
+                //    ->filterBySubmissionIds([$submission->getId()])
+                //    ->filterByAssoc(Application::ASSOC_TYPE_PUBLICATION_FORMAT)
+                //    ->getMany();
+                //foreach ($pubFormatFiles as $pubFormatFile) {
+                //   $path = $pubFormatFile->_data['path'];
+                //   $filesize = Services::get('file')->fs->fileSize($path);
+                //    error_log("filesize: " . var_export($filesize,true));
+                //}
+                //die();
 
-                    $megaByte = 1024*1024;
-                    if (round((int) $publicationFormat->getFileSize() / $megaByte > 15)) {
-                        return false;
-		    }
-		    return $this->getSupportedFileTypes($submissionFiles->getData('mimetype'));
+                //$supportedPublicationFormats = array_filter($publicationFormats, function($publicationFormat) use($submission) {
+		        //    //error_log("publicationFormat: file size " . var_export($publicationFormat->getFileSize(),true));	
+		        //    //error_log("publicationFormat: ID " . var_export($publicationFormat->getId(),true));	
+		        //    //error_log("publicationFormat: " . var_export($publicationFormat,true));	
+                //    //$submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
+                //    //error_log("submissionFiles: " . var_export($submissionFiles,true));
+                //    //error_log("submissionFiles: " . var_export($submissionFiles->_current,true));
+                //    //die();
+		        //    $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat)->_current;
+                //    //error_log("=========================================================");
+                //    //error_log("file size: " . $publicationFormat->getFileSize());
+                //    $path = $publicationFormat->_data['path'];
+                //    error_log("path: " . $path);
+                //    if (!$submissionFiles) {
+                //        error_log("!submissionFiles");
+                //        return false;
+		        //    }
+                //    
+                //    $megaByte = 1024*1024;
+                //    if (round((int) $publicationFormat->getFileSize() / $megaByte > 15)) {
+                //        return false;
+		        //    }
+		        //return $this->getSupportedFileTypes($submissionFiles->getData('mimetype'));
 			 
-                });
+            //});
                 
             $templateMgr->addJavaScript(
                 'vgWort',
@@ -1016,24 +1060,33 @@ class VgwortPlugin extends GenericPlugin {
      */
     function getSubmissionFiles($submission, $publicationFormat)
     {
-        $publication = $submission->getCurrentPublication();
-	// import('lib.pkp.classes.submission.SubmissionFile'); // File constants
-	/*
+        //$publication = $submission->getCurrentPublication();
+    	// import('lib.pkp.classes.submission.SubmissionFile'); // File constants
+    	/*
         $submissionFiles = Repo::submissionFile()->getMany([
             'submissionIds' => [$publication->getData('submissionId')],
             'fileStages' => [SUBMISSION_FILE_PROOF],
             'assocTypes' => [ASSOC_TYPE_PUBLICATION_FORMAT],
             'assocIds' => [$publicationFormat->getId()],
-	]);
-	 */
+	    ]);
+         */
+        //error_log("publicationFormatID from getSubmissionFiles: " . $publicationFormat->getId());
         $submissionFiles = Repo::submissionFile()
             ->getCollector()
-            ->filterBySubmissionIds([$publication->getData('submissionId')])
+            ->filterBySubmissionIds([$submission->getId()])
+            //->filterBySubmissionIds([$publication->getData('submissionId')])
             ->filterByAssoc(
                 Application::ASSOC_TYPE_PUBLICATION_FORMAT,
                 [$publicationFormat->getId()]
             )
             ->getMany();
+        //foreach ($submissionFiles as $submissionFile) {
+        //    error_log("submissionFiles: " . var_export($submissionFile,true));
+            //$path = $submissionFile->_data['path'];
+            //error_log("path: " . $path);
+            //$filesize = Services::get('file')->fs->fileSize($path);
+            //error_log("filesize: " . $filesize);
+        //}
         return $submissionFiles;
     }
 
@@ -1066,12 +1119,14 @@ class VgwortPlugin extends GenericPlugin {
     {
         // Get genre ID that corresponds to the book manuscript.
         $genreDao = DAORegistry::getDAO('GenreDAO');
-        $genreBook = $genreDao->getByKey('MANUSCRIPT');
+        $genreBook = $genreDao->getByKey('MANUSCRIPT', $this->getCurrentContextId());
         $genreIdBook = $genreBook->getId();
-
+        //error_log("submissionFiles,true: " . var_export($submissionFiles,true));
+        //error_log("genreIdBook: " . $genreIdBook);
         // Return submission file with genre ID from above.
         foreach ($submissionFiles as $submissionFile) {
             $genreIdSubmissionFile = $submissionFile->getData('genreId');
+            //error_log("genreIdSubmissionFile: " . var_export($genreIdSubmissionFile,true));
             if (!$genreIdSubmissionFile) {
                 return false;
             } else {

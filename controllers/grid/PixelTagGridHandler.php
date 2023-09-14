@@ -304,7 +304,7 @@ class PixelTagGridHandler extends GridHandler
         $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
         $pixelTag = $pixelTagDao->getById($pixelTagId, $contextId);
 
-        if ($pixelTag && $pixelTag->getStatus() == STATUS_UNREGISTERED_ACTIVE && !$pixelTag->getDateRemoved()) {
+        if ($pixelTag && $pixelTag->getStatus() == PixelTag::STATUS_UNREGISTERED_ACTIVE && !$pixelTag->getDateRemoved()) {
             $vgWortPlugin = PluginRegistry::getPlugin('generic', VGWORT_PLUGIN_NAME);
             //import('plugins.generic.vgwort.classes.VGWortEditorAction');
             $vgWortEditorAction = new VGWortEditorAction($vgWortPlugin);

@@ -7,10 +7,12 @@ use PKP\controllers\grid\GridCellProvider;
 use PKP\controllers\grid\GridHandler;
 use PKP\linkAction\LinkAction;
 use PKP\linkAction\request\RedirectAction;
+use PKP\linkAction\request\AjaxModal;
 use PKP\config\Config;
 
 use APP\facades\Repo;
 use APP\core\Services;
+
 
 // import('lib.pkp.classes.controllers.grid.GridCellProvider');
 
@@ -103,16 +105,16 @@ class PixelTagGridCellProvider extends GridCellProvider
                 return ['label' => $pixelTag->getDomain()];
             case 'dates':
                 $dateOrdered = $pixelTag->getDateOrdered()
-                    ? strftime(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateOrdered()))
+                    ? date(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateOrdered()))
                     : '&mdash;';
                 $dateAssigned = $pixelTag->getDateAssigned()
-                    ? strftime(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateAssigned()))
+                    ? date(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateAssigned()))
                     : '&mdash;';
                 $dateRegistered = $pixelTag->getDateRegistered()
-                    ? strftime(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateRegistered()))
+                    ? date(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateRegistered()))
                     : '&mdash;';
                 $dateRemoved = $pixelTag->getDateRemoved()
-                    ? strftime(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateRemoved()))
+                    ? date(Config::getVar('general', 'date_format_short'), strtotime($pixelTag->getDateRemoved()))
                     : '&mdash;';
                 return ['label' => $dateOrdered .'<br />' . $dateAssigned .'<br />' . $dateRegistered .'<br />' . $dateRemoved];
             case 'status':
