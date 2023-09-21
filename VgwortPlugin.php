@@ -248,7 +248,6 @@ class VgwortPlugin extends GenericPlugin {
             // Return a JSON response containing the settings form
             case 'settings':
                 // Load the custom form
-                // $this->import('classes.form.VGWortSettingsForm');
                 $contextId = $request->getContext()->getId();
                 $settingsForm = new classes\form\VgwortSettingsForm($this, $contextId);
 
@@ -280,7 +279,6 @@ class VgwortPlugin extends GenericPlugin {
         $schema = $args[0];
         switch ($hookName) {
             case 'Schema::get::publication':
-            // case 'Schema::get::chapter':
                 $schema->properties->{"vgWort::texttype"} = (object) [
                     'type' => 'string',
                 ];
@@ -317,22 +315,13 @@ class VgwortPlugin extends GenericPlugin {
      */
     function addAdditionalFieldNames($hookName, $args) {
         switch ($hookName) {
-            // case 'userdao::getAdditionalFieldNames':
-            // case 'authordao::getAdditionalFieldNames':
-            //     $fields =& $params[1];
-            //     $fields[] = 'vgWortCardNo';
             case 'chapterdao::getAdditionalFieldNames':
-                //$fields =& $args[1];
                 $fields[] = 'vgWort::texttype';
                 $fields[] = 'vgWort::pixeltag::assign';
                 $fields[] = 'vgWort::pixeltag::remove';
                 $fields[] = 'vgWort::pixeltag::status';
                 break;
             case 'chapterdao::getLocaleFieldNames':
-                //error_log("chapterdao::getLocaleFieldNames");
-                //error_log("args[1]: " . var_export($args[1],true));
-                //$fields =& $args[1];
-                //$fields[] = 'chapterNumber';
                 $fields[] = self::CHAPTER_NUMBER;;
                 break;
         }
@@ -350,7 +339,6 @@ class VgwortPlugin extends GenericPlugin {
     {
         switch ($hookName) {
             case 'Template::Settings::distribution':
-                // error_log("distributionNavLink");
                 $smarty =& $args[1];
                 $output =& $args[2];
                 $templateFile = method_exists($this, 'getTemplateResource')
@@ -654,62 +642,6 @@ class VgwortPlugin extends GenericPlugin {
                     ]
                 );
 
-                ////    $publication = $submission->getCurrentPublication();
-                //error_log("publication: " . var_export($publication,true));
-                //$availablePublicationFormats = [];
-                //foreach ($submission->getCurrentPublication()->_data['publicationFormats'] as $format) {
-                //    if ($format->getIsAvailable() && $format->getIsApproved() && !$format->getPhysicalFormat()) {
-                //        $availablePublicationFormats[$format->getId()] = $format;
-                //    }
-                //}
-                //error_log("availablePublicationFormats: " . var_export($availablePublicationFormats,true));
-                //error_log("**************************");
-                //$publicationFormats = $publication->getData('publicationFormats');
-                //error_log("PublicationFormats: " . var_export($publicationFormats,true));
-  //              die();
-                //error_log("publicationFormats: " . var_export($publicationFormats,true));	
-		        //error_log("publicationFormats: gettype: " . var_export(gettype($publicationFormats),true));	
-		        //error_log("publicationFormat: file size " . var_export($publicationFormats[1575]->getFileSize(),true));	
-		        //error_log("publicationFormats: " . var_export($publicationFormats,true));	
-                //die();
-                //$pubFormatFiles = Repo::submissionFile()
-                //    ->getCollector()
-                //    ->filterBySubmissionIds([$submission->getId()])
-                //    ->filterByAssoc(Application::ASSOC_TYPE_PUBLICATION_FORMAT)
-                //    ->getMany();
-                //foreach ($pubFormatFiles as $pubFormatFile) {
-                //   $path = $pubFormatFile->_data['path'];
-                //   $filesize = Services::get('file')->fs->fileSize($path);
-                //    error_log("filesize: " . var_export($filesize,true));
-                //}
-                //die();
-
-                //$supportedPublicationFormats = array_filter($publicationFormats, function($publicationFormat) use($submission) {
-		        //    //error_log("publicationFormat: file size " . var_export($publicationFormat->getFileSize(),true));	
-		        //    //error_log("publicationFormat: ID " . var_export($publicationFormat->getId(),true));	
-		        //    //error_log("publicationFormat: " . var_export($publicationFormat,true));	
-                //    //$submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
-                //    //error_log("submissionFiles: " . var_export($submissionFiles,true));
-                //    //error_log("submissionFiles: " . var_export($submissionFiles->_current,true));
-                //    //die();
-		        //    $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat)->_current;
-                //    //error_log("=========================================================");
-                //    //error_log("file size: " . $publicationFormat->getFileSize());
-                //    $path = $publicationFormat->_data['path'];
-                //    error_log("path: " . $path);
-                //    if (!$submissionFiles) {
-                //        error_log("!submissionFiles");
-                //        return false;
-		        //    }
-                //    
-                //    $megaByte = 1024*1024;
-                //    if (round((int) $publicationFormat->getFileSize() / $megaByte > 15)) {
-                //        return false;
-		        //    }
-		        //return $this->getSupportedFileTypes($submissionFiles->getData('mimetype'));
-			 
-            //});
-                
             $templateMgr->addJavaScript(
                 'vgWort',
                 Application::get()->getRequest()->getBaseUrl()
@@ -801,8 +733,6 @@ class VgwortPlugin extends GenericPlugin {
 
         $submissionId = $monograph->getId();
         $submission = Repo::submission()->get($submissionId);
-        // $submissionDao = DAORegistry::getDAO('SubmissionDAO');
-        // $submission = $submissionDao->getById($monograph->getId());
         $contextId = $submission->getData('contextId');
 
         if (isset($submission)) {
@@ -820,8 +750,9 @@ class VgwortPlugin extends GenericPlugin {
                     $replace = $search . '<script>function vgwPixelCall(galleyId) { document.getElementById("div_vgwpixel_"+galleyId).innerHTML="<img src=\'' . $pixelTagSrc . '\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
                     $output = str_replace($search, $replace, $output);
                     foreach ($publicationFormats as $publicationFormat) {
-                        $submissionFile = $this->getSubmissionFiles($submission, $publicationFormat)->_current;
-                        //error_log("[VGWortPlugin] submissionFile: " . var_export(get_class($submissionFile),true));
+                        $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
+                        $bookManuscriptFile = $this->getBookManuscriptFile($submissionFiles);
+                        if (!isset($bookManuscriptFile)) { continue; }
                         // change galley download links
                         $publicationFormatUrl = $request->url(
                             null,
@@ -830,7 +761,7 @@ class VgwortPlugin extends GenericPlugin {
                             [
                                 $submission->getBestId(),
                                 $publicationFormat->getId(),
-                                $submissionFile->getId()
+                                $bookManuscriptFile->getId()
                             ]
                         );
 
@@ -975,12 +906,8 @@ class VgwortPlugin extends GenericPlugin {
             return false;
         }
         $submissionId = $publication->getData('submissionId');
-        // $submissionFileDao =& DAORegistry::getDAO('SubmissionFileDAO');
-
         $submission = Repo::submission()->get($submissionId);
 
-        // $submissionDao = DAORegistry::getDAO('SubmissionDAO');
-        // $submission = $submissionDao->getById($submissionId);
         $contextId = $submission->getData('contextId');
         $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
         $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
@@ -1007,7 +934,6 @@ class VgwortPlugin extends GenericPlugin {
 
         if(!$availablePixelTag) {
             // order pixel tags
-            // $this->import('classes.VGWortEditorAction');
             $vgWortEditorAction = new VgwortEditorAction($this);
             $orderResult = $vgWortEditorAction->orderPixel($contextId);
             if (!$orderResult[0]) {
@@ -1060,33 +986,14 @@ class VgwortPlugin extends GenericPlugin {
      */
     function getSubmissionFiles($submission, $publicationFormat)
     {
-        //$publication = $submission->getCurrentPublication();
-    	// import('lib.pkp.classes.submission.SubmissionFile'); // File constants
-    	/*
-        $submissionFiles = Repo::submissionFile()->getMany([
-            'submissionIds' => [$publication->getData('submissionId')],
-            'fileStages' => [SUBMISSION_FILE_PROOF],
-            'assocTypes' => [ASSOC_TYPE_PUBLICATION_FORMAT],
-            'assocIds' => [$publicationFormat->getId()],
-	    ]);
-         */
-        //error_log("publicationFormatID from getSubmissionFiles: " . $publicationFormat->getId());
         $submissionFiles = Repo::submissionFile()
             ->getCollector()
             ->filterBySubmissionIds([$submission->getId()])
-            //->filterBySubmissionIds([$publication->getData('submissionId')])
             ->filterByAssoc(
                 Application::ASSOC_TYPE_PUBLICATION_FORMAT,
                 [$publicationFormat->getId()]
             )
             ->getMany();
-        //foreach ($submissionFiles as $submissionFile) {
-        //    error_log("submissionFiles: " . var_export($submissionFile,true));
-            //$path = $submissionFile->_data['path'];
-            //error_log("path: " . $path);
-            //$filesize = Services::get('file')->fs->fileSize($path);
-            //error_log("filesize: " . $filesize);
-        //}
         return $submissionFiles;
     }
 
@@ -1121,12 +1028,10 @@ class VgwortPlugin extends GenericPlugin {
         $genreDao = DAORegistry::getDAO('GenreDAO');
         $genreBook = $genreDao->getByKey('MANUSCRIPT', $this->getCurrentContextId());
         $genreIdBook = $genreBook->getId();
-        //error_log("submissionFiles,true: " . var_export($submissionFiles,true));
-        //error_log("genreIdBook: " . $genreIdBook);
+        // TODO: Fehlermeldung, wenn genreId != 104 (=MANUSCRIPT)
         // Return submission file with genre ID from above.
         foreach ($submissionFiles as $submissionFile) {
             $genreIdSubmissionFile = $submissionFile->getData('genreId');
-            //error_log("genreIdSubmissionFile: " . var_export($genreIdSubmissionFile,true));
             if (!$genreIdSubmissionFile) {
                 return false;
             } else {

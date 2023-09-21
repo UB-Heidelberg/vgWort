@@ -64,7 +64,6 @@ class VGWortEditorAction {
                 ]
             );
             $response = json_decode($response->getBody(), false);
-            error_log("VGWORT: response: " . var_export($response,true));
             return [true, $response];
         }
         catch (\GuzzleHttp\Exception\ClientException $e) {
@@ -121,10 +120,8 @@ class VGWortEditorAction {
      */
     function check($pixelTag) {
         $submission = $pixelTag->getSubmission();
-        //error_log("check() submission: " . var_export($submission,true));
         $publication = $submission->getCurrentPublication();
         $publicationFormats = $publication->getData('publicationFormats');
-        //error_log("publicationFormats: " . var_export($publicationFormats,true));
         if ($submission->getData('status') != STATUS_PUBLISHED) {
             return [false, __('plugins.generic.vgwort.check.articleNotPublished')];
         } else {
@@ -132,7 +129,6 @@ class VGWortEditorAction {
             if (empty($supportedPublicationFormats)) {
                 return [false, __('plugins.generic.vgwort.check.galleyRequired')];
             } else {
-                //foreach ($submission->getAuthors() as $author) {
                 foreach ($publication->getData('authors') as $author) {
                     $cardNo = $author->getData('vgWortCardNo');
                     if (!empty($cardNo)) {
@@ -167,7 +163,6 @@ class VGWortEditorAction {
         if ($isError) {
             $errorMsg = $checkResult[1];
         } else {
-            //error_log("registerResult");
             $registerResult = $this->newMessage($pixelTag, $request, $contextId);
             $isError = !$registerResult[0];
             $errorMsg = $registerResult[1];
@@ -192,7 +187,6 @@ class VGWortEditorAction {
         if (!defined('SESSION_DISABLE_INIT')) {
             $user = $request->getUser();
             if ($user) {
-                // import('classes.notification.NotificationManager');
                 $notificationManager = new NotificationManager();
                 $notificationManager->createTrivialNotification(
                     $user->getId(), $notificationType, ['contents' => $notificationMsg]
@@ -286,37 +280,17 @@ class VGWortEditorAction {
         if ($vgWortTestAPI) {
             $vgWortAPI = NEW_MESSAGE_TEST;
         }
-
-        //$vgWortPlugin->import('classes.PixelTag'); // TODO: Brauchen wir das?
-        //$submission = $pixelTag->getSubmission();
         $submissionId = $pixelTag->getSubmission()->getId();
-        //$publicationId = $pixelTag->getPublication()->getId();
-        //error_log("PUBLICATION ID: " . $publicationId);
-        //error_log("SUBMISSION ID: " . $submissionId);
         $submission = Repo::submission()->get($submissionId);
-        //$publication = Repo::publication()->get($submissionId);
         $publication = $submission->getCurrentPublication();
 
         $locale = $submission->getLocale();
 
         // Get authors and translators
-        //error_log(var_export(Repo::author(),true));
-        //$contributors = $submission->getAuthors();
-        //$contributors = $submission->getData('authors');
-        //$contributors = $publication->getData('authors');
-        //filterByPublicationIds
         $authors = Repo::author()->getCollector()->filterByPublicationIds([$publication->getId()])->getMany(); 
-        //error_log("contributors: " . var_export($contributors,true));
         $contributors = iterator_to_array($authors);
-        //error_log("contributors: " . var_export($contributors,true));
-        //foreach ($contributors as $contributor) {
-        //    error_log(var_export($contributor,true));
-        //}
-        //error_log("contributors: " . var_export($contributors,true));
         //$submissionAuthors = array_filter($contributors, [$this, '_filterChapterAuthors']);
         //$submissionTranslators = array_filter($contributors, [$this, '_filterTranslators']);
-        //error_log("submissionAuthors: " . var_export($submissionAuthors,true));
-        //error_log("submissionTranslators: " . var_export($submissionTranslators,true));
         //assert(!empty($submissionAuthors) || !empty($submissionTranslators));
         assert($contributors); 
         $participants = [];
@@ -360,26 +334,20 @@ class VGWortEditorAction {
         //        };
         //    };
         //}
-        //error_log("participants: " . var_export($participants,true));
 
-        //$publication = $submission->getCurrentPublication();
         $publicationFormats = $publication->getData('publicationFormats');
-
+        //error_log("publicationFormats: " . var_export($publicationFormats,true));
         // Get publication formats that are allowed by VG Wort.
         $supportedPublicationFormats = array_filter($publicationFormats, [$this, '_checkPublicationFormatSupported']);
-        //foreach ($supportedPublicationFormats as $supportedPublicationFormat) {
-        //    $submissionFiles = $vgWortPlugin->getSubmissionFiles($submission, $supportedPublicationFormat)->_current;
-        //}
-        //error_log("supportedPublicationFormats: " . var_export($supportedPublicationFormats,true));
         $webranges = [];
 
         $dispatcher = Application::get()->getDispatcher();
         foreach ($supportedPublicationFormats as $supportedPublicationFormat) {
             $submissionFiles = iterator_to_array($vgWortPlugin->getSubmissionFiles($submission, $supportedPublicationFormat));
-            //error_log(var_export($submissionFiles,true));
             $bookManuscriptFile = $vgWortPlugin->getBookManuscriptFile($submissionFiles);
+            //error_log("publicationFormatFile" . var_export($bookManuscriptFile,true));
+
             if (!isset($bookManuscriptFile)) { continue; }
-            //error_log("bookManuscriptFile: " . var_export($bookManuscriptFile,true));
             $url = $dispatcher->url(
                 $request,
                 ROUTE_PAGE,
@@ -396,56 +364,11 @@ class VGWortEditorAction {
             );
             $webrange = ['urls' => [$url]];
             $webranges[] = $webrange;
-
-            //$downlaodUrl1 = $dispatcher->url(
-            //    $request,
-            //    ROUTE_PAGE,
-            //    NULL,
-            //    'catalog',
-            //    'view',
-            //    [
-            //        $submission->getId(),
-            //        $submissionFiles->getId()
-            //    ]
-            //);
-            //$webrange = ['urls' => [$downlaodUrl1]];
-            //$webranges[] = $webrange;
-
-            //$downlaodUrl2 = $dispatcher->url(
-            //    $request,
-            //    ROUTE_PAGE,
-            //    NULL,
-            //    'catalog',
-            //    'view',
-            //    [
-            //        $submission->getId(),
-            //        $submissionFiles->getId()
-            //    ]
-            //);
-            //$webrange = ['urls' => [$downlaodUrl2]];
-            //$webranges[] = $webrange;
         }
 
-        //$dePublicationFormats = array_filter($supportedPublicationFormats, [$this, '_filterDEPublicationFormats']);
-        //if (!empty($dePublicationFormats)) {
-        //    reset($dePublicationFormats);
-        //    $publicationFormat = current($dePublicationFormats);
-        //} else {
-        //    $enPublicationFormats = array_filter($supportedPublicationFormats, [$this, '_filterENPublicationFormats']);
-        //    if (!empty($enPublicationFormats)) {
-        //        reset($enPublicationFormats);
-        //        $publicationFormat = current($enPublicationFormats);
-        //    } else {
-        //        reset($supportedPublicationFormats);
-        //        $publicationFormat = current($supportedPublicationFormat);
-        //    }
-        //}
-        //$publicationFormat = current($supportedPublicationFormats);
-        //$publicationFormatFile = $vgWortPlugin->getSubmissionFiles($submission, $publicationFormat)->_current;
         $publicationFormatFile = $bookManuscriptFile;
-
+        
         $content = Services::get('file')->fs->read($publicationFormatFile->getData('path'));
-        // $content = file_get_contents($publicationFormatFile->getData('path')); TODO: What's the difference?
         $publicationFormatFileType = $publicationFormatFile->getData('mimetype');
 
         if ($publicationFormatFileType == 'text/html' || $publicationFormatFileType == 'text/xml') {
@@ -461,7 +384,6 @@ class VGWortEditorAction {
         // TODO: XML?
 
         $submissionLocale = $submission->getLocale();
-        //$primaryLocale = AppLocale::getPrimaryLocale();
 
         $title = $submission->getTitle('de');
         if (!isset($title) || $title == '') {
@@ -470,13 +392,9 @@ class VGWortEditorAction {
         if (!isset($title) || $title == '') {
             $title = $submission->getTitle($submissionLocale);
         }
-        //if (!isset($title) || $title == '') {
-        //    $title = $submission->getTitle($primaryLocale);
-        //}
         $shorttext = mb_substr($title, 0, 99, 'utf8');
 
         $isLyric = ($pixelTag->getTextType() == PixelTag::TYPE_LYRIC);
-        error_log("shorttext: " . $shorttext);
         $message = [
             'shorttext' => $shorttext,
             'text' => $text,
@@ -495,24 +413,14 @@ class VGWortEditorAction {
             "rightsGrantedConfirmation" => true
         ];
         try {
-            // if (!$vgWortPlugin->requirementsFulfilled()) {
-            //     return [false, __('plugins.generic.vgwort.requirementsRequired')];
-            // }
-            //error_log("message: " . var_export($message,true));
-            //error_log("vgWortAPI: " . $vgWortAPI);
-            //error_log("vgWortUserId: " . $vgWortUserId);
-            //error_log("vgWortUserPassword: " . $vgWortUserPassword);
             $response = $httpClient->request(
                 'POST',
                 $vgWortAPI,
                 [
                     'json' => $data,
                     'auth' => [$vgWortUserId, $vgWortUserPassword],
-                    // 'debug' => $debug
                 ]
             );
-            error_log("VgwortEditorAction response: " . var_export($response,true));
-            //$response = json_decode($response, false);
             $response = json_decode($response->getBody(), false);
             return [true, $response];
         }
@@ -532,7 +440,6 @@ class VGWortEditorAction {
                 $responseBodyAsString = $response->getBody()->getContents();
                 $statusCode = $response->getStatusCode();
                 $reasonPhrase = $response->getReasonPhrase();
-                error_log("response: " . var_export($response,true));
                 error_log("reasonPhrase: " . $responseBodyAsString);
                 return [false, $reasonPhrase];
             }
@@ -554,9 +461,7 @@ class VGWortEditorAction {
             return false;
         }
         $submission = $this->getSubmissionByPublicationFormat($publicationFormat);
-        //error_log("submission: " . var_export($submission,true));
         $submissionFiles = $this->_plugin->getSubmissionFiles($submission, $publicationFormat);
-        //error_log("submissionFiles: " . var_export($submissionFiles,true));
         if (!$submissionFiles) {
             return false;
         }
@@ -567,12 +472,8 @@ class VGWortEditorAction {
             if (round((int) $fileSize / $megaByte > 15)) {
                 return false;
             }
-            //error_log("mimetype: " . $submissionFile->getData('mimetype'));
             return $this->_plugin->getSupportedFileTypes($submissionFile->getData('mimetype'));
         }
-        //if (round((int) $publicationFormat->getFileSize() / $megaByte > 15)) {
-        //    return false;
-        //}
     }
 
 //    /**
@@ -615,17 +516,9 @@ class VGWortEditorAction {
     function getSubmissionByPublicationFormat($publicationFormat)
     {
         $publicationId = $publicationFormat->getData('publicationId');
-        //error_log("publicationFormat: " . var_export($publicationFormat,true));
-        //error_log("SERVICES");
-        //$publication = Services::get('publication')->get($publicationId);
         $publication = Repo::publication()->get($publicationId);
-        //error_log("getSubmissionByPublicationFormat: " . var_export($publication,true));
-        //die();
         $submissionId = $publication->getData('submissionId');
         return Repo::submission()->get($submissionId);
-        //error_log("submission: " . var_export($submission,true));
-        //return $submission;
-        //return Services::get('submission')->get($publication->getData('submissionId'));
     }
 
     function _filterDEPublicationFormats($publicationFormat)
