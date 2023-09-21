@@ -37,14 +37,16 @@ class InsertOldPixelTags extends CommandLineTool
 
         $checkedSubmissionFiles = [];
         $total = Repo::submissionFile()->getCollector()->getCount();
-        error_log("number: $total");
+        error_log("Total: $total submission files");
         
         $submissionFiles = Repo::submissionFile()->getCollector()->getMany();
         foreach ($submissionFiles as $submissionFile) {
             $submissionFileId = $submissionFile->getId();
-            //
+
+            // Show progress bar
             $checkedSubmissionFiles[] = $submissionFileId;
-            //
+            echo $this->showProgressBar(count($checkedSubmissionFiles), $total);
+            
             $chapterId = $submissionFile->getData('chapterId');
 
             if (isset($chapterId)) {
@@ -68,26 +70,21 @@ class InsertOldPixelTags extends CommandLineTool
                 ->filterBySubmissionIds([$submissionId])
                 ->getMany();
 
-            //// Write missing submissions to text file
-            //$fileName = __DIR__ . '/missingSubmissions.txt';
-            if ($this->my_empty($publicCode) || $this->my_empty($privateCode)
-            ) { 
-                //file_put_contents($fileName, $submissionId . '\n', FILE_APPEND | LOCK_EX);
-                continue;
-            }
+            // public and private code must not be empty
+            if ($this->my_empty($publicCode) || $this->my_empty($privateCode)) { continue; }
 
-            error_log("contextId:     $contextId");
-            error_log("submissionId:  $submissionId");
-            error_log("chapterId:     $chapterId");
-            error_log("domain:        $domain");
-            error_log("dateOrdered:   $dateOrdered");
-            error_log("dateAssigned:  $dateAssigned");
-            error_log("status:        $status");
-            error_log("textType:      $textType");
-            error_log("message:       $message");
-            error_log("privateCode:   $privateCode");
-            error_log("publicCode:    $publicCode");
-            error_log("************************************************");
+            //error_log("contextId:     $contextId");
+            //error_log("submissionId:  $submissionId");
+            //error_log("chapterId:     $chapterId");
+            //error_log("domain:        $domain");
+            //error_log("dateOrdered:   $dateOrdered");
+            //error_log("dateAssigned:  $dateAssigned");
+            //error_log("status:        $status");
+            //error_log("textType:      $textType");
+            //error_log("message:       $message");
+            //error_log("privateCode:   $privateCode");
+            //error_log("publicCode:    $publicCode");
+            //error_log("************************************************");
 
             $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
             
@@ -112,7 +109,6 @@ class InsertOldPixelTags extends CommandLineTool
             }
 
             $done = count($checkedSubmissionFiles);
-            $this->progress_bar($done, $total);
         }
     }
 
@@ -123,11 +119,11 @@ class InsertOldPixelTags extends CommandLineTool
         }
     }
 
-    function progress_bar($done, $total, $info="", $width=50)
+    function showProgressBar($done, $total, $info="", $width=50)
     {
         $perc = round(($done * 100) / $total);
         $bar = round(($width * $perc) / 100);
-        return sprintf("%s%%[%s>%s]%s\r", $perc, str_repeat("=", $bar), str_repeat(" ", $width-$bar), $info);
+        return sprintf("[%s%s] %s%%\r", str_repeat("#", $bar), str_repeat("-", $width-$bar), $perc);
     }
 }
 
