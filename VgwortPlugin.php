@@ -764,9 +764,9 @@ class VgwortPlugin extends GenericPlugin {
                                 $bookManuscriptFile->getId()
                             ]
                         );
-                        $search = '#<a (.+)href="' . $publicationFormatUrl . '"(.+)>#';
+                        $search = '#<a (.*)href="' . $publicationFormatUrl . '"(.*)>#';
                         // insert pixel tag for galleys download links using JS
-                        $replace = '<div style="font-size:0;line-height:0;width:0;" id="div_vgwpixel_' . $publicationFormat->getId() . '"></div><a class="$1" href="' . $publicationFormatUrl . '" onclick="vgwPixelCall(' . $publicationFormat->getId() . ');">';
+                        $replace = '<div style="font-size:0;line-height:0;width:0;" id="div_vgwpixel_' . $publicationFormat->getId() . '"></div><a $1 $2 href="' . $publicationFormatUrl . '" onclick="vgwPixelCall(' . $publicationFormat->getId() . ');">';
                         // insert pixel tag for galleys download links using VG Wort redirect
                         $output = preg_replace($search, $replace, $output);
                     }
