@@ -35,6 +35,7 @@ use APP\facades\Repo;
 use APP\core\Services;
 use APP\core\Application;
 use APP\notification\NotificationManager;
+use APP\template\TemplateManager;
 
 define('NOTIFICATION_TYPE_VGWORT_ERROR', 0x400000A);
 
@@ -473,8 +474,8 @@ class VgwortPlugin extends GenericPlugin {
         }
 
         $vgWortTextTypes = [
-            TYPE_TEXT => __('plugins.generic.vgwort.pixelTag.textType.text'),
-            TYPE_LYRIC => __('plugins.generic.vgwort.pixelTag.textType.lyric')
+            PixelTag::TYPE_TEXT => __('plugins.generic.vgwort.pixelTag.textType.text'),
+            PixelTag::TYPE_LYRIC => __('plugins.generic.vgwort.pixelTag.textType.lyric')
         ];
         $chapterForm =& $args[0];
         $chapter = $chapterForm->getChapter();
