@@ -314,7 +314,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function addAdditionalFieldNames($hookName, $args) {
+    function addAdditionalFieldNames($hookName, $args, &$fields) {
         switch ($hookName) {
             case 'chapterdao::getAdditionalFieldNames':
                 $fields[] = 'vgWort::texttype';
