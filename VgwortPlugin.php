@@ -1031,16 +1031,11 @@ class VgwortPlugin extends GenericPlugin {
         // TODO: Fehlermeldung, wenn genreId != 104 (=MANUSCRIPT)
         // Return submission file with genre ID from above.
         foreach ($submissionFiles as $submissionFile) {
+            $chapterId = $submissionFile->getData('chapterId');
+            $mimetype = $submissionFile->getData('mimetype');
+            if (isset($chapterId) || $mimetype == "text/xml" || $mimetype == "text/html") { error_log("chapterId: " . $chapterId); continue; }
             $genreIdSubmissionFile = $submissionFile->getData('genreId');
-            if (!$genreIdSubmissionFile) {
-                return false;
-            } else {
-                if ($genreIdSubmissionFile != $genreIdBook) {
-                    continue;
-                } else {
                     return $submissionFile;
-                }
-            }
         }
         // TODO: What if there are more than one book manuscript components?
     }
