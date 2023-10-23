@@ -8,11 +8,14 @@ use PKP\components\forms\FormComponent;
 use PKP\db\DAORegistry;
 
 
-define('FORM_VGWORT', 'vgwortform');
+//define('FORM_VGWORT', 'vgwortform');
 
-class VgwortForm extends FormComponent {
+class VgwortForm extends FormComponent
+{
+    public const FORM_VGWORT = 'vgwortform';
 
-    public $id = FORM_VGWORT;
+    public $id = self::FORM_VGWORT;
+    //public $id = FORM_VGWORT;
 
     public $method = 'PUT';
 
@@ -20,7 +23,8 @@ class VgwortForm extends FormComponent {
         // // Define the settings template and store a copy of the plugin object.
         // parent::__construct($plugin->getTemplateResource('settings.tpl'));
         // $this->plugin = $plugin;
-        // error_log("*** VGWortForm class ***");
+        error_log("*** VGWortForm class ***");
+        //error_log("FORM_VGWORT: ". FORM_VGWORT);
         $this->action = $action;
         $this->locales = $locales;
         $this->successMessage = "Success!";

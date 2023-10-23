@@ -85,13 +85,16 @@ class VgwortPlugin extends GenericPlugin {
 
             // Initialize data.
             Hook::add('authorform::initdata', [$this, 'metadataInitData']);
+            Hook::add('userdetailsform::initdata', [$this, 'metadataInitData']);
 
             // Read user's input.
             Hook::add('authorform::readuservars', [$this, 'metadataReadUserVars']);
+            Hook::add('userdetailsform::readuservars', [$this, 'metadataReadUserVars']);
             Hook::add('chapterform::readuservars', [$this, 'metadataReadUserVars']);
 
             // Execute forms.
             Hook::add('authorform::execute', [$this, 'metadataExecute']);
+            Hook::add('userdetailsform::execute', [$this, 'metadataExecute']);
             Hook::add('chapterform::execute', [$this, 'handleChapterFormExecute']);
             Hook::add('chapterform::display', [$this, 'handleChapterFormDisplay']);
 
@@ -317,10 +320,13 @@ class VgwortPlugin extends GenericPlugin {
     function addAdditionalFieldNames($hookName, $args, &$fields) {
         switch ($hookName) {
             case 'chapterdao::getAdditionalFieldNames':
+                error_log("chapterdao::getAdditionalFieldNames");
                 $fields[] = 'vgWort::texttype';
                 $fields[] = 'vgWort::pixeltag::assign';
                 $fields[] = 'vgWort::pixeltag::remove';
                 $fields[] = 'vgWort::pixeltag::status';
+                error_log("chapterdao::getAdditionalFieldNames");
+                error_log("fields: " . var_export($fields,true));
                 break;
             case 'chapterdao::getLocaleFieldNames':
                 $fields[] = self::CHAPTER_NUMBER;;
@@ -349,8 +355,9 @@ class VgwortPlugin extends GenericPlugin {
                 break;
             case 'Template::Workflow::Publication':
                 $html =& $args[2];
+                //error_log("addNewTabs: " . FORM_VGWORT);
                 $html .= '<tab id="vgwortformtab" label="VG Wort">
-                    <pkp-form v-bind="components.' . FORM_VGWORT . '" @set="set" />
+                    <pkp-form v-bind="components.' . VgwortForm::FORM_VGWORT . '" @set="set" />
                     </tab>';
                 break;
         }
@@ -371,9 +378,12 @@ class VgwortPlugin extends GenericPlugin {
 
         switch ($hookName) {
             case 'userdetailsform::initdata':
+                error_log("userdetailsform::initdata");
                 if (isset($form->userId)) {
-                    $userDao = DAORegistry::getDAO('UserDAO');
-                    $user = $userDao->getById($form->userId);
+                    //$userDao = DAORegistry::getDAO('UserDAO');
+                    //$user = $userDao->getById($form->userId);
+                    $user = $form->user;
+                    error_log("user: " . var_export($user,true));
                 }
                 break;
             case 'authorform::initdata':
@@ -384,6 +394,7 @@ class VgwortPlugin extends GenericPlugin {
                 break;
         }
         if ($user) {
+            error_log("user: vgWortCardNo: " . $user->getData('vgWortCardNo'));
             $form->setData('vgWortCardNo', $user->getData('vgWortCardNo'));
         }
         return false;
@@ -403,6 +414,12 @@ class VgwortPlugin extends GenericPlugin {
 
         if ($hookName == 'Common::UserDetails::AdditionalItems') {
             $smarty->assign('vgWortFieldTitle', 'plugins.generic.vgwort.cardNo');
+            $userId = $smarty->smarty->tpl_vars['userId']->value;
+            $user = Repo::user()->get($userId);
+            error_log("metadataFieldEdit user: " . var_export($user->getId(),true));
+            //$user = $form->user;
+            error_log("User ID: " . $smarty->smarty->tpl_vars['userId']->value);
+            //$smarty->assign('vgWortCardNo', $user->getData('vgWortCardNo'));
         }
         $templateFile = method_exists($this, 'getTemplateResource')
             ? $this->getTemplateResource('vgWortCardNo.tpl')
@@ -421,9 +438,14 @@ class VgwortPlugin extends GenericPlugin {
     {
         $form =& $args[0];
         $vars =& $args[1];
+
         switch ($hookName) {
             case 'authorform::readuservars':
                 $vars[] = 'vgWortCardNo';
+                break;
+            case 'userdetailsform::readuservars':
+                $vars[] = 'vgWortCardNo';
+                error_log("metadataReadUserVars: vars " . var_export($vars,true));
                 break;
             case 'chapterform::readuservars':
                 $vars = array_merge($vars, self::DATA_FIELDS);
@@ -447,6 +469,7 @@ class VgwortPlugin extends GenericPlugin {
         switch ($hookName) {
             case 'userdetailsform::execute':
                 $user = $form->user;
+                error_log("form->getData: " . $form->getData('vgWortCardNo'));
                 break;
             case 'authorform::execute':
                 $user = $form->getAuthor();
@@ -622,13 +645,16 @@ class VgwortPlugin extends GenericPlugin {
                     $context->getPath(),
                     'submissions/' . $submission->getId() . '/publications/' . $submission->getLatestPublication()->getId()
                 );
-
+                
+                error_log("CONST: VgwortForm::FORM_VGWORT " . VgwortForm::FORM_VGWORT);
+                //error_log("CONST: FORM_VGWORT " . FORM_VGWORT);
+                
                 $form = new VgwortForm($latestPublicationApiUrl, [], $context, $submission);
-
+                error_log("FORM: " . var_export($form,true));
                 // Use "getState()" (instead of "setState()") to avoid
                 // accidentally overwriting additional components on page.
                 $components = $templateMgr->getState('components');
-                $components[FORM_VGWORT] = $form->getConfig();
+                $components[VgwortForm::FORM_VGWORT] = $form->getConfig();
                 $templateMgr->setState([
                     'components' => $components,
                 ]);
@@ -748,7 +774,7 @@ class VgwortPlugin extends GenericPlugin {
 
                 if (!empty($publicationFormats)) {
                     $search = '<div class="entry_details">';
-                    $replace = $search . '<script>function vgwPixelCall(galleyId) { document.getElementById("div_vgwpixel_"+galleyId).innerHTML="<img src=\'' . $pixelTagSrc . '\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
+                    $replace = $search . '<script>function vgwPixelCall(id) { document.getElementById("div_vgwpixel_"+id).innerHTML="<img src=\'' . $pixelTagSrc . '\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
                     $output = str_replace($search, $replace, $output);
                     foreach ($publicationFormats as $publicationFormat) {
                         $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
