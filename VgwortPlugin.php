@@ -415,11 +415,11 @@ class VgwortPlugin extends GenericPlugin {
         if ($hookName == 'Common::UserDetails::AdditionalItems') {
             $smarty->assign('vgWortFieldTitle', 'plugins.generic.vgwort.cardNo');
             $userId = $smarty->smarty->tpl_vars['userId']->value;
-            $user = Repo::user()->get($userId);
-            error_log("metadataFieldEdit user: " . var_export($user->getId(),true));
+            if ($userId) {
+                $user = Repo::user()->get($userId);
             //$user = $form->user;
-            error_log("User ID: " . $smarty->smarty->tpl_vars['userId']->value);
             //$smarty->assign('vgWortCardNo', $user->getData('vgWortCardNo'));
+            }
         }
         $templateFile = method_exists($this, 'getTemplateResource')
             ? $this->getTemplateResource('vgWortCardNo.tpl')
