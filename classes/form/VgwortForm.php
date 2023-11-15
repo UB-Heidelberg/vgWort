@@ -19,12 +19,9 @@ class VgwortForm extends FormComponent
 
     public $method = 'PUT';
 
-    public function __construct($action, $locales, $context, $submission) {
-        // // Define the settings template and store a copy of the plugin object.
-        // parent::__construct($plugin->getTemplateResource('settings.tpl'));
-        // $this->plugin = $plugin;
-        error_log("*** VGWortForm class ***");
-        //error_log("FORM_VGWORT: ". FORM_VGWORT);
+    public function __construct($action, $locales, $context, $submission)
+    {
+        // Define the settings template and store a copy of the plugin object.
         $this->action = $action;
         $this->locales = $locales;
         $this->successMessage = "Success!";
