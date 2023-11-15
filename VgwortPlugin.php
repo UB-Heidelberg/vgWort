@@ -778,22 +778,19 @@ class VgwortPlugin extends GenericPlugin {
                     $output = str_replace($search, $replace, $output);
                     foreach ($publicationFormats as $publicationFormat) {
                         $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
+                        
+                        $chapterFiles = $this->getChapterFiles($submissionFiles);
+                        error_log("CHAPTER FILES: " . var_export($chapterFiles,true));
+                        //die();
+                        if ($chapterFiles) {
+                            foreach ($chapterFiles as $chapterFile) {
+                                [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $chapterFile);
+                                $output = preg_replace($search, $replace, $output);
+                            }
+                        }
                         $bookManuscriptFile = $this->getBookManuscriptFile($submissionFiles);
                         if (!isset($bookManuscriptFile)) { continue; }
-                        // change galley download links
-                        $publicationFormatUrl = $request->url(
-                            null,
-                            'catalog',
-                            'view',
-                            [
-                                $submission->getBestId(),
-                                $publicationFormat->getId(),
-                                $bookManuscriptFile->getId()
-                            ]
-                        );
-                        $search = '#<a (.*)href="' . $publicationFormatUrl . '"(.*)>#';
-                        // insert pixel tag for galleys download links using JS
-                        $replace = '<div style="font-size:0;line-height:0;width:0;" id="div_vgwpixel_' . $publicationFormat->getId() . '"></div><a $1 $2 href="' . $publicationFormatUrl . '" onclick="vgwPixelCall(' . $publicationFormat->getId() . ');">';
+                        [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $bookManuscriptFile);
                         // insert pixel tag for galleys download links using VG Wort redirect
                         $output = preg_replace($search, $replace, $output);
                     }
@@ -801,6 +798,26 @@ class VgwortPlugin extends GenericPlugin {
             }
         }
         return $output;
+    }
+
+    function createPixelTagURL($request, $submission, $publicationFormat, $file)
+    {   
+       $publicationFormatUrl = $request->url(
+           null,
+           'catalog',
+           'view',
+           [
+               $submission->getBestId(),
+               $publicationFormat->getId(),
+               $file->getId()
+           ]
+       );
+       $search = '#<a (.*)href="' . $publicationFormatUrl . '"(.*)>#';
+       // insert pixel tag for galleys download links using JS
+       $replace = '<div style="font-size:0;line-height:0;width:0;" id="div_vgwpixel_' . $publicationFormat->getId() . '"></div><a $1 $2 href="' . $publicationFormatUrl . '" onclick="vgwPixelCall(' . $publicationFormat->getId() . ');">';
+       return [$search, $replace];
+       //// insert pixel tag for galleys download links using VG Wort redirect
+       //$output = preg_replace($search, $replace, $output);
     }
 
     /**
@@ -1059,11 +1076,24 @@ class VgwortPlugin extends GenericPlugin {
         foreach ($submissionFiles as $submissionFile) {
             $chapterId = $submissionFile->getData('chapterId');
             $mimetype = $submissionFile->getData('mimetype');
-            if (isset($chapterId) || $mimetype == "text/xml" || $mimetype == "text/html") { error_log("chapterId: " . $chapterId); continue; }
+            if (isset($chapterId) || $mimetype == "text/xml" || $mimetype == "text/html") { continue; }
             $genreIdSubmissionFile = $submissionFile->getData('genreId');
-                    return $submissionFile;
+            return $submissionFile;
         }
         // TODO: What if there are more than one book manuscript components?
     }
 
+    function getChapterFiles($submissionFiles)
+    {
+        $chapterFiles = [];
+        foreach ($submissionFiles as $submissionFile) {
+            $chapterId = $submissionFile->getData('chapterId');
+            if (!isset($chapterId) || empty($chapterId)) {
+                continue;
+            } else {
+                $chapterFiles[] = $submissionFile;
+            }
+        }
+        return $chapterFiles;
+    }
 }
