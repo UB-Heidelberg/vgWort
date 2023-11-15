@@ -73,21 +73,13 @@ class InsertOldPixelTags extends CommandLineTool
             // public and private code must not be empty
             if ($this->my_empty($publicCode) || $this->my_empty($privateCode)) { continue; }
 
-            //error_log("contextId:     $contextId");
-            //error_log("submissionId:  $submissionId");
-            //error_log("chapterId:     $chapterId");
-            //error_log("domain:        $domain");
-            //error_log("dateOrdered:   $dateOrdered");
-            //error_log("dateAssigned:  $dateAssigned");
-            //error_log("status:        $status");
-            //error_log("textType:      $textType");
-            //error_log("message:       $message");
-            //error_log("privateCode:   $privateCode");
-            //error_log("publicCode:    $publicCode");
-            //error_log("************************************************");
+            // $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
+            if (!$this->my_empty($chapterId)) {
+                $pixelTag = $pixelTagDao->getPixelTagByChapterId($chapterId, $submissionId, $contextId);
+            } else {
+                $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
+            }
 
-            $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
-            
             if (!$this->my_empty($pixelTag)) {
                 continue;
             } else {
