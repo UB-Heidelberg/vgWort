@@ -206,7 +206,7 @@ class PixelTagDAO extends DAO {
         $params = array((int) $submissionId);
         if ($contextId) $params[] = (int) $contextId;
         $result = $this->retrieve(
-            'SELECT * FROM pixel_tags WHERE submission_id = ?' . ($contextId ? ' AND context_id = ?' : ''),
+            'SELECT * FROM pixel_tags WHERE chapter_id IS NULL AND submission_id = ?' . ($contextId ? ' AND context_id = ?' : ''),
             $params
         );
         $row = $result->current();

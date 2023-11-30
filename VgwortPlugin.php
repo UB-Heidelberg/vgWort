@@ -755,12 +755,12 @@ class VgwortPlugin extends GenericPlugin {
                 $application = PKPApplication::getApplication();
                 $request = $application->getRequest();
                 $httpProtocol = $request->getProtocol() == 'https' ? 'https://' : 'http://';
-                $pixelTagSrc = $httpProtocol . $pixelTag->getDomain() . '/na/' . $pixelTag->getPublicCode();
+                $pixelTagSrc = $httpProtocol . $pixelTag->getDomain() . '/na/';
                 $pixelTagImg = '<img src=\'' . $pixelTagSrc . '\' width=\'1\' height=\'1\' alt=\'\' />';
 
                 if (!empty($publicationFormats)) {
                     $search = '<div class="entry_details">';
-                    $replace = $search . '<script>function vgwPixelCall(id) { document.getElementById("div_vgwpixel_"+id).innerHTML="<img src=\'' . $pixelTagSrc . '\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
+                    $replace = $search . '<script>function vgwPixelCall(id,publicCode) { document.getElementById("div_vgwpixel_"+id).innerHTML="<img src=\'' . $pixelTagSrc . '" + publicCode + "\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
                     $output = str_replace($search, $replace, $output);
                     foreach ($publicationFormats as $publicationFormat) {
                         $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
@@ -768,13 +768,14 @@ class VgwortPlugin extends GenericPlugin {
                         $chapterFiles = $this->getChapterFiles($submissionFiles);
                         if ($chapterFiles) {
                             foreach ($chapterFiles as $chapterFile) {
-                                [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $chapterFile);
+                                $pixelTagChapter = $pixelTagDao->getPixelTagByChapterId($chapterFile->getData('chapterId'), $submissionId, $contextId);
+                                [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $chapterFile, $pixelTagChapter);
                                 $output = preg_replace($search, $replace, $output);
                             }
                         }
                         $bookManuscriptFile = $this->getBookManuscriptFile($submissionFiles);
                         if (!isset($bookManuscriptFile)) { continue; }
-                        [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $bookManuscriptFile);
+                        [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $bookManuscriptFile, $pixelTag);
                         // insert pixel tag for galleys download links using VG Wort redirect
                         $output = preg_replace($search, $replace, $output);
                     }
@@ -784,7 +785,7 @@ class VgwortPlugin extends GenericPlugin {
         return $output;
     }
 
-    function createPixelTagURL($request, $submission, $publicationFormat, $file)
+    function createPixelTagURL($request, $submission, $publicationFormat, $file, $pixelTag)
     {   
        $publicationFormatUrl = $request->url(
            null,
@@ -798,7 +799,7 @@ class VgwortPlugin extends GenericPlugin {
        );
        $search = '#<a (.*)href="' . $publicationFormatUrl . '"(.*)>#';
        // insert pixel tag for galleys download links using JS
-       $replace = '<div style="font-size:0;line-height:0;width:0;" id="div_vgwpixel_' . $publicationFormat->getId() . '"></div><a $1 $2 href="' . $publicationFormatUrl . '" onclick="vgwPixelCall(' . $publicationFormat->getId() . ');">';
+       $replace = '<div style="font-size:0;line-height:0;width:0;" id="div_vgwpixel_' . $publicationFormat->getId() . '"></div><a $1 $2 href="' . $publicationFormatUrl . '" onclick="vgwPixelCall(' . $publicationFormat->getId() . ', \'' . $pixelTag->getPublicCode() . '\');">';
        return [$search, $replace];
        //// insert pixel tag for galleys download links using VG Wort redirect
        //$output = preg_replace($search, $replace, $output);
@@ -899,6 +900,15 @@ class VgwortPlugin extends GenericPlugin {
                 $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
                 $pixelTagDao->updateObject($pixelTag);
             }
+            error_log("pixelTagStatus: " .$pixelTag->getStatus());
+            error_log("==================================");
+            error_log("==================================");
+            error_log("==================================");
+            error_log("==================================");
+            error_log("==================================");
+            error_log("==================================");
+            error_log("==================================");
+            error_log("==================================");
             $pubObject->setData('vgWort::pixeltag::status', $pixelTag->getStatus());
         } else {
             $vgWortAssignPixel = $pubObject->getData('vgWort::pixeltag::assign') ? 1 : 0;

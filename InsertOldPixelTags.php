@@ -71,16 +71,16 @@ class InsertOldPixelTags extends CommandLineTool
                 ->getMany();
 
             // public and private code must not be empty
-            if ($this->my_empty($publicCode) || $this->my_empty($privateCode)) { continue; }
+            if ($this->isEmpty($publicCode) || $this->isEmpty($privateCode)) { continue; }
 
             // $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
-            if (!$this->my_empty($chapterId)) {
+            if (!$this->isEmpty($chapterId)) {
                 $pixelTag = $pixelTagDao->getPixelTagByChapterId($chapterId, $submissionId, $contextId);
             } else {
                 $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submissionId, $contextId);
             }
 
-            if (!$this->my_empty($pixelTag)) {
+            if (!$this->isEmpty($pixelTag)) {
                 continue;
             } else {
                 $pixelTag = new PixelTag();
@@ -104,7 +104,7 @@ class InsertOldPixelTags extends CommandLineTool
         }
     }
 
-    function my_empty($x)
+    function isEmpty($x)
     {
         if (!isset($x) || empty($x) || is_null($x) || '') {
             return true;

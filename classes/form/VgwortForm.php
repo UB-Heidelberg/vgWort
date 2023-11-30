@@ -49,6 +49,10 @@ class VgwortForm extends FormComponent
             $publication->setData('vgWort::pixeltag::remove', $pixelTagRemoved);
         } else {
             $pixelTagStatus = $pixelTag->getStatus();
+            error_log("FORM pixelTag" . var_export($pixelTag,true));
+
+            error_log("FORM pixelTagStatus" . $pixelTagStatus);
+            $publication->setData('vgWort::pixeltag::status', $pixelTagStatus);
         }
 
         if ($pixelTagStatus == PixelTag::STATUS_UNREGISTERED_ACTIVE || $pixelTagStatus == PixelTag::STATUS_REGISTERED_ACTIVE) {
