@@ -12,11 +12,15 @@
 
 namespace APP\plugins\generic\vgwort;
 
+use APP\core\Request;
+use APP\notification\Notification;
+use APP\publicationFormat\PublicationFormat;
+use APP\submission\Submission;
+use Exception;
+use IteratorAggregate;
+use PKP\form\validation\FormValidatorRegExp;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
-use PKP\plugins\PluginRegistry;
-use PKP\plugins\SubmissionFile;
-use PKP\plugins\FieldOptions;
 
 use PKP\db\DAORegistry;
 use PKP\linkAction\LinkAction;
@@ -32,10 +36,11 @@ use APP\plugins\generic\vgwort\classes\PixelTag;
 use APP\plugins\generic\vgwort\controllers\grid\PixelTagGridHandler;
 
 use APP\facades\Repo;
-use APP\core\Services;
 use APP\core\Application;
 use APP\notification\NotificationManager;
 use APP\template\TemplateManager;
+use PKP\submissionFile\SubmissionFile;
+use SmartyException;
 
 define('NOTIFICATION_TYPE_VGWORT_ERROR', 0x400000A);
 
@@ -47,9 +52,10 @@ class VgwortPlugin extends GenericPlugin {
         'vgWort::pixeltag::assign',
         'vgWort::pixeltag::remove'
     ];
-    
+
     const CHAPTER_NUMBER = 'chapterNumber';
-    
+    public array $pixelTagStatusLabels;
+
     /**
      * @copydoc GenericPlugin::register()
      */
@@ -164,22 +170,11 @@ class VgwortPlugin extends GenericPlugin {
     //     return $isSoapExtension && $isOpenSSL && $isCURL;
     // }
 
-    /**
-     * Return the canonical template path of this plugin.
-     *
-     * @param bool $inCore
-     */
-    function getTemplatePath($inCore = false)
-    {
-        // TODO: ojsVersion?
-        $ojsVersion = Application::getApplication()->getCurrentVersion()->getVersionString();
-        return parent::getTemplatePath();
-    }
 
     /**
      * Get installation script
      */
-    function getInstallMigration()
+    function getInstallMigration(): VgwortMigration
     {
         return new VgwortMigration();
     }
@@ -193,7 +188,7 @@ class VgwortPlugin extends GenericPlugin {
      *
      * @return array
      */
-    public function getActions($request, $actionArgs)
+    public function getActions($request, $actionArgs): array
     {
         // Get the existing actions
         $actions = parent::getActions($request, $actionArgs);
@@ -245,7 +240,7 @@ class VgwortPlugin extends GenericPlugin {
      *
      * @return JSONMessage
      */
-    public function manage($args, $request)
+    public function manage($args, $request): JSONMessage
     {
         switch ($request->getUserVar('verb')) {
 
@@ -279,7 +274,8 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    public function addToSchema($hookName, $args) {
+    public function addToSchema($hookName, $args): bool
+    {
         $schema = $args[0];
         switch ($hookName) {
             case 'Schema::get::publication':
@@ -317,7 +313,8 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function addAdditionalFieldNames($hookName, $args, &$fields) {
+    function addAdditionalFieldNames($hookName, $args, &$fields): bool
+    {
         switch ($hookName) {
             case 'chapterdao::getAdditionalFieldNames':
                 $fields[] = 'vgWort::texttype';
@@ -339,7 +336,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function addNewTabs($hookName, $args)
+    function addNewTabs($hookName, $args): bool
     {
         switch ($hookName) {
             case 'Template::Settings::distribution':
@@ -367,7 +364,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function metadataInitData($hookName, $args)
+    function metadataInitData($hookName, $args): bool
     {
         $form =& $args[0];
         $user = NULL;
@@ -400,7 +397,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function metadataFieldEdit($hookName, $args)
+    function metadataFieldEdit($hookName, $args): bool
     {
         $smarty =& $args[1];
         $output =& $args[2];
@@ -427,16 +424,14 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function metadataReadUserVars($hookName, $args)
+    function metadataReadUserVars($hookName, $args): bool
     {
         $form =& $args[0];
         $vars =& $args[1];
 
         switch ($hookName) {
-            case 'authorform::readuservars':
-                $vars[] = 'vgWortCardNo';
-                break;
             case 'userdetailsform::readuservars':
+            case 'authorform::readuservars':
                 $vars[] = 'vgWortCardNo';
                 break;
             case 'chapterform::readuservars':
@@ -453,7 +448,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function metadataExecute($hookName, $args)
+    function metadataExecute($hookName, $args): bool
     {
         $form =& $args[0];
         $user = NULL;
@@ -478,7 +473,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    public function handleChapterFormDisplay($hookName, $args)
+    public function handleChapterFormDisplay($hookName, $args): bool
     {
         $request = Application::get()->getRequest();
         try {
@@ -501,16 +496,12 @@ class VgwortPlugin extends GenericPlugin {
             $pixelTagStatus = $chapter->getData("vgWort::pixeltag::status");
             $chapterForm->setData("vgWortPixeltagStatus", $pixelTagStatus);
             switch ($pixelTagStatus) {
+                case PixelTag::STATUS_UNREGISTERED_ACTIVE:
                 case PixelTag::STATUS_REGISTERED_ACTIVE:
                     $chapterForm->setData("vgWortAssignRemoveCheckbox", "vgWortAssignPixelTag");
                     break;
-                case PixelTag::STATUS_UNREGISTERED_ACTIVE:
-                    $chapterForm->setData("vgWortAssignRemoveCheckbox", "vgWortAssignPixelTag");
-                    break;
-                case PixelTag::STATUS_REGISTERED_REMOVED:
-                    $chapterForm->setData("vgWortAssignRemoveCheckbox", "vgWortRemovePixelTag");
-                    break;
                 case PixelTag::STATUS_UNREGISTERED_REMOVED:
+                case PixelTag::STATUS_REGISTERED_REMOVED:
                     $chapterForm->setData("vgWortAssignRemoveCheckbox", "vgWortRemovePixelTag");
                     break;
             }
@@ -530,7 +521,7 @@ class VgwortPlugin extends GenericPlugin {
         return false;
     }
 
-    public function _chapterFormFilter($output, $templateMgr)
+    public function _chapterFormFilter(string $output, TemplateManager $templateMgr): string
     {
         if (preg_match('/<div[\s\S]*id="authors\[\]"/', $output, $matches, PREG_OFFSET_CAPTURE)) {
             $offset = $matches[0][1];
@@ -545,7 +536,7 @@ class VgwortPlugin extends GenericPlugin {
     }
 
     /**
-     * Hook callback for assigning a pixel tag to a chapter 
+     * Hook callback for assigning a pixel tag to a chapter
      * when executing "Edit Chapter" form.
      *
      * @param string $hookName
@@ -632,7 +623,7 @@ class VgwortPlugin extends GenericPlugin {
                 $request = Application::get()->getRequest();
                 $latestPublicationApiUrl = $request->getDispatcher()->url(
                     $request,
-                    ROUTE_API,
+                    PKPApplication::ROUTE_API,
                     $context->getPath(),
                     'submissions/' . $submission->getId() . '/publications/' . $submission->getLatestPublication()->getId()
                 );
@@ -651,7 +642,7 @@ class VgwortPlugin extends GenericPlugin {
                     [
                         'inline' => true,
                         'contexts' => 'backend',
-                        'priority' => STYLE_SEQUENCE_CORE
+                        'priority' => TemplateManager::STYLE_SEQUENCE_CORE
                     ]
                 );
 
@@ -664,7 +655,7 @@ class VgwortPlugin extends GenericPlugin {
                     . DIRECTORY_SEPARATOR . 'vgwort.js',
                 [
                     'contexts' => 'backend',
-                    'priority' => STYLE_SEQUENCE_LAST
+                    'priority' => TemplateManager::STYLE_SEQUENCE_LAST
                 ]);
             break;
         }
@@ -682,15 +673,13 @@ class VgwortPlugin extends GenericPlugin {
         $templateMgr =& $args[0];
         $template =& $args[1];
 
-        switch ($template) {
-            case 'controllers/tab/workflow/production.tpl':
-                $submission = $templateMgr->getTemplateVars('submission');
-                $notificationOptions =& $templateMgr->getTemplateVars('productionNotificationRequestOptions');
-                $notificationOptions[NOTIFICATION_LEVEL_NORMAL][NOTIFICATION_TYPE_VGWORT_ERROR] = [
-                    ASSOC_TYPE_SUBMISSION,
-                    $submission->getId()
-                ];
-                break;
+        if ($template == 'controllers/tab/workflow/production.tpl') {
+            $submission = $templateMgr->getTemplateVars('submission');
+            $notificationOptions =& $templateMgr->getTemplateVars('productionNotificationRequestOptions');
+            $notificationOptions[Notification::NOTIFICATION_LEVEL_NORMAL][NOTIFICATION_TYPE_VGWORT_ERROR] = [
+                PKPApplication::ASSOC_TYPE_SUBMISSION,
+                $submission->getId()
+            ];
         }
         return false;
     }
@@ -715,7 +704,7 @@ class VgwortPlugin extends GenericPlugin {
     }
 
     /**
-     * Hook callback for creating a new table in the distribution settings 
+     * Hook callback for creating a new table in the distribution settings
      * that lists all pixel tags.
      *
      * @param string $hookName
@@ -738,55 +727,51 @@ class VgwortPlugin extends GenericPlugin {
      */
     function insertPixelTagSubmissionPage($output, $templateMgr)
     {
-        $press = $templateMgr->getTemplateVars('currentContext');
-        $monograph = $templateMgr->getTemplateVars('publishedSubmission'); // NICHT "monograph"
-
-        $publicationFormats = $templateMgr->getTemplateVars('publicationFormats');
-        $availableFiles = $templateMgr->getTemplateVars('availableFiles');
-
-        $submissionId = $monograph->getId();
-        $submission = Repo::submission()->get($submissionId);
+        /** @var Submission $submission */
+        $submission = $templateMgr->getTemplateVars('publishedSubmission'); // NICHT "monograph"
+        $submissionId = $submission->getId();
         $contextId = $submission->getData('contextId');
+        $publicationFormats = $templateMgr->getTemplateVars('publicationFormats');
+        if (empty($publicationFormats)) {
+            // Submission has no publication formats, therefore do nothing
+            return $output;
+        }
 
-        if (isset($submission)) {
-            $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
-            $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submission->getId(), $contextId);
-            if (isset($pixelTag) && !$pixelTag->getDateRemoved()) {
-                $application = PKPApplication::getApplication();
-                $request = $application->getRequest();
-                $httpProtocol = $request->getProtocol() == 'https' ? 'https://' : 'http://';
-                $pixelTagSrc = $httpProtocol . $pixelTag->getDomain() . '/na/';
-                $pixelTagImg = '<img src=\'' . $pixelTagSrc . '\' width=\'1\' height=\'1\' alt=\'\' />';
+        /** @var PixelTagDAO $pixelTagDao */
+        $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
+        $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submission->getId(), $contextId);
+        if (isset($pixelTag) && !$pixelTag->getDateRemoved()) {
+            $application = PKPApplication::getApplication();
+            $request = $application->getRequest();
+            $pixelTagSrc = 'https://' . $pixelTag->getDomain() . '/na/';
 
-                if (!empty($publicationFormats)) {
-                    $search = '<div class="entry_details">';
-                    $replace = $search . '<script>function vgwPixelCall(id,publicCode) { document.getElementById("div_vgwpixel_"+id).innerHTML="<img src=\'' . $pixelTagSrc . '" + publicCode + "\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
-                    $output = str_replace($search, $replace, $output);
-                    foreach ($publicationFormats as $publicationFormat) {
-                        $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
-                        
-                        $chapterFiles = $this->getChapterFiles($submissionFiles);
-                        if ($chapterFiles) {
-                            foreach ($chapterFiles as $chapterFile) {
-                                $pixelTagChapter = $pixelTagDao->getPixelTagByChapterId($chapterFile->getData('chapterId'), $submissionId, $contextId);
-                                [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $chapterFile, $pixelTagChapter);
-                                $output = preg_replace($search, $replace, $output);
-                            }
+            $search = '<div class="entry_details">';
+            $replace = $search . '<script>function vgwPixelCall(id,publicCode) { document.getElementById("div_vgwpixel_"+id).innerHTML="<img src=\'' . $pixelTagSrc . '" + publicCode + "\' width=\'1\' height=\'1\' alt=\'\' />"; }</script>';
+            $output = str_replace($search, $replace, $output);
+            foreach ($publicationFormats as $publicationFormat) {
+                $submissionFiles = $this->getSubmissionFiles($submission, $publicationFormat);
+                $chapterFiles = $this->getChapterFiles($submissionFiles);
+                if ($chapterFiles) {
+                    foreach ($chapterFiles as $chapterFile) {
+                        $pixelTagChapter = $pixelTagDao->getPixelTagByChapterId($chapterFile->getData('chapterId'), $submissionId, $contextId);
+                        if ($pixelTagChapter) {
+                            [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $chapterFile, $pixelTagChapter);
+                            $output = preg_replace($search, $replace, $output);
                         }
-                        $bookManuscriptFile = $this->getBookManuscriptFile($submissionFiles);
-                        if (!isset($bookManuscriptFile)) { continue; }
-                        [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $bookManuscriptFile, $pixelTag);
-                        // insert pixel tag for galleys download links using VG Wort redirect
-                        $output = preg_replace($search, $replace, $output);
                     }
                 }
+                $bookManuscriptFile = $this->getBookManuscriptFile($submissionFiles);
+                if (!isset($bookManuscriptFile)) { continue; }
+                [$search, $replace] = $this->createPixelTagURL($request, $submission, $publicationFormat, $bookManuscriptFile, $pixelTag);
+                // insert pixel tag for galleys download links using VG Wort redirect
+                $output = preg_replace($search, $replace, $output);
             }
         }
         return $output;
     }
 
     function createPixelTagURL($request, $submission, $publicationFormat, $file, $pixelTag)
-    {   
+    {
        $publicationFormatUrl = $request->url(
            null,
            'catalog',
@@ -811,7 +796,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string $hookName
      * @param array $args
      */
-    function insertPixelTagJSViewer($hookName, $args)
+    function insertPixelTagJSViewer($hookName, $args): bool
     {
         $templateMgr =& $args[1];
         $output =& $args[2];
@@ -819,23 +804,21 @@ class VgwortPlugin extends GenericPlugin {
         $press = $templateMgr->getTemplateVars('currentContext');
         $submission = $templateMgr->getTemplateVars('publishedSubmission');
         $chapter = $templateMgr->getTemplateVars('chapter');
-        
+
         if (isset($press) && !empty($submission)) {
-            if (isset($submission) && !empty($submission)) {
-                $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
-                if (isset($chapter)) {
-                    $pixelTag = $pixelTagDao->getPixelTagByChapterId($chapter->getId(), $submission->getId(), $press->getId());
-                }
-                // Take pixel tag from submission if chapter does not have its own pixel.
-                if (!isset($pixelTag)) {
-                    $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submission->getId(), $press->getId());
-                }
-                if (isset($pixelTag) && !$pixelTag->getDateRemoved()) {
-                    $application = PKPApplication::getApplication();
-                    $request = $application->getRequest();
-                    $httpsProtocol = $request->getProtocol() == 'https';
-                    $output = $this->buildPixelTagHTML($pixelTag, $httpsProtocol);
-                }    
+            $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
+            if (isset($chapter)) {
+                $pixelTag = $pixelTagDao->getPixelTagByChapterId($chapter->getId(), $submission->getId(), $press->getId());
+            }
+            // Take pixel tag from submission if chapter does not have its own pixel.
+            if (!isset($pixelTag)) {
+                $pixelTag = $pixelTagDao->getPixelTagBySubmissionId($submission->getId(), $press->getId());
+            }
+            if (isset($pixelTag) && !$pixelTag->getDateRemoved()) {
+                $application = PKPApplication::getApplication();
+                $request = $application->getRequest();
+                $httpsProtocol = $request->getProtocol() == 'https';
+                $output = $this->buildPixelTagHTML($pixelTag, $httpsProtocol);
             }
         }
 
@@ -900,15 +883,15 @@ class VgwortPlugin extends GenericPlugin {
                 $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
                 $pixelTagDao->updateObject($pixelTag);
             }
-            error_log("pixelTagStatus: " .$pixelTag->getStatus());
-            error_log("==================================");
-            error_log("==================================");
-            error_log("==================================");
-            error_log("==================================");
-            error_log("==================================");
-            error_log("==================================");
-            error_log("==================================");
-            error_log("==================================");
+//            error_log("pixelTagStatus: " .$pixelTag->getStatus());
+//            error_log("==================================");
+//            error_log("==================================");
+//            error_log("==================================");
+//            error_log("==================================");
+//            error_log("==================================");
+//            error_log("==================================");
+//            error_log("==================================");
+//            error_log("==================================");
             $pubObject->setData('vgWort::pixeltag::status', $pixelTag->getStatus());
         } else {
             $vgWortAssignPixel = $pubObject->getData('vgWort::pixeltag::assign') ? 1 : 0;
@@ -932,7 +915,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param string hookName
      * @param array args
      */
-    function handleSubmissionFormExecute($hookName, $args)
+    function handleSubmissionFormExecute($hookName, $args): bool
     {
         $publication =& $args[0];
         $publicationData = $args[2];
@@ -962,7 +945,7 @@ class VgwortPlugin extends GenericPlugin {
      * @param int $vgWortTextType
      * @return boolean
      */
-    function assignPixelTag($submission, $vgWortTextType, $chapterId = NULL)
+    function assignPixelTag($submission, $vgWortTextType, $chapterId = NULL): bool
     {
         $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
         $contextId = $submission->getContextId();
@@ -980,7 +963,7 @@ class VgwortPlugin extends GenericPlugin {
                 // Create a form error notification.
                 $notificationManager = new NotificationManager();
                 $notificationManager->createTrivialNotification(
-                    $user->getId(), NOTIFICATION_TYPE_FORM_ERROR, ['contents' => $orderResult[1]]
+                    $user->getId(), Notification::NOTIFICATION_TYPE_FORM_ERROR, ['contents' => $orderResult[1]]
                 );
                 return false;
             } else {
@@ -1021,9 +1004,9 @@ class VgwortPlugin extends GenericPlugin {
      *
      * @param PublicationFormat $publicationFormat
      */
-    function getSubmissionFiles($submission, $publicationFormat)
+    function getSubmissionFiles($submission, PublicationFormat $publicationFormat): \Illuminate\Support\LazyCollection
     {
-        $submissionFiles = Repo::submissionFile()
+        return Repo::submissionFile()
             ->getCollector()
             ->filterBySubmissionIds([$submission->getId()])
             ->filterByAssoc(
@@ -1031,7 +1014,6 @@ class VgwortPlugin extends GenericPlugin {
                 [$publicationFormat->getId()]
             )
             ->getMany();
-        return $submissionFiles;
     }
 
     /**
@@ -1039,7 +1021,7 @@ class VgwortPlugin extends GenericPlugin {
      *
      * @param SubmissionFile $submissionFile
      */
-    function getPublicationFormatId($submissionFile)
+    function getPublicationFormatId(SubmissionFile $submissionFile)
     {
         return $submissionFile->getData('assocId');
     }
@@ -1049,7 +1031,7 @@ class VgwortPlugin extends GenericPlugin {
      *
      * @param SubmissionFile $submissionFile
      */
-    function getLocaleFromSubmissionFile($submissionFile)
+    function getLocaleFromSubmissionFile(SubmissionFile $submissionFile)
     {
         return $submissionFile->getData('locale');
     }
@@ -1059,7 +1041,7 @@ class VgwortPlugin extends GenericPlugin {
      *
      * @param array $submissionFiles
      */
-    function getBookManuscriptFile($submissionFiles)
+    function getBookManuscriptFile(IteratorAggregate $submissionFiles)
     {
         // Get genre ID that corresponds to the book manuscript.
         $genreDao = DAORegistry::getDAO('GenreDAO');
@@ -1075,16 +1057,15 @@ class VgwortPlugin extends GenericPlugin {
             return $submissionFile;
         }
         // TODO: What if there are more than one book manuscript components?
+        return null;
     }
 
-    function getChapterFiles($submissionFiles)
+    function getChapterFiles($submissionFiles): array
     {
         $chapterFiles = [];
         foreach ($submissionFiles as $submissionFile) {
             $chapterId = $submissionFile->getData('chapterId');
-            if (!isset($chapterId) || empty($chapterId)) {
-                continue;
-            } else {
+            if (!empty($chapterId)) {
                 $chapterFiles[] = $submissionFile;
             }
         }
