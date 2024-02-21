@@ -40,6 +40,7 @@ use APP\core\Application;
 use APP\notification\NotificationManager;
 use APP\template\TemplateManager;
 use PKP\submissionFile\SubmissionFile;
+use Smarty_Internal_Template;
 use SmartyException;
 
 define('NOTIFICATION_TYPE_VGWORT_ERROR', 0x400000A);
@@ -521,7 +522,7 @@ class VgwortPlugin extends GenericPlugin {
         return false;
     }
 
-    public function _chapterFormFilter(string $output, TemplateManager $templateMgr): string
+    public function _chapterFormFilter(string $output, Smarty_Internal_Template $templateMgr): string
     {
         if (preg_match('/<div[\s\S]*id="authors\[\]"/', $output, $matches, PREG_OFFSET_CAPTURE)) {
             $offset = $matches[0][1];
