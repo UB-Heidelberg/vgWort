@@ -964,7 +964,7 @@ class VgwortPlugin extends GenericPlugin {
                 // Create a form error notification.
                 $notificationManager = new NotificationManager();
                 $notificationManager->createTrivialNotification(
-                    $user->getId(), Notification::NOTIFICATION_TYPE_FORM_ERROR, ['contents' => $orderResult[1]]
+                    $user->getId(), Notification::NOTIFICATION_TYPE_ERROR, ['contents' => $orderResult[1]]
                 );
                 return false;
             } else {
