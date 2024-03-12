@@ -36,6 +36,7 @@ use APP\plugins\generic\vgwort\classes\PixelTag;
 use APP\plugins\generic\vgwort\controllers\grid\PixelTagGridHandler;
 
 use APP\facades\Repo;
+use APP\core\Services;
 use APP\core\Application;
 use APP\notification\NotificationManager;
 use APP\template\TemplateManager;
@@ -67,6 +68,11 @@ class VgwortPlugin extends GenericPlugin {
         if ($success && $this->getEnabled()) {
             $pixelTagDao = new PixelTagDAO($this->getName());
             $returner = DAORegistry::registerDAO('PixelTagDAO', $pixelTagDao);
+
+            Hook::add('userdetailsform::Constructor', function($hookName, $args) {
+                Services::get('schema')->get('user',true);
+                return false;
+            });
 
             // Extend Schemas and DAOs for some new properties.
             Hook::add('Schema::get::publication', [$this, 'addToSchema']);
@@ -373,8 +379,6 @@ class VgwortPlugin extends GenericPlugin {
         switch ($hookName) {
             case 'userdetailsform::initdata':
                 if (isset($form->userId)) {
-                    //$userDao = DAORegistry::getDAO('UserDAO');
-                    //$user = $userDao->getById($form->userId);
                     $user = $form->user;
                 }
                 break;
@@ -408,8 +412,6 @@ class VgwortPlugin extends GenericPlugin {
             $userId = $smarty->smarty->tpl_vars['userId']->value;
             if ($userId) {
                 $user = Repo::user()->get($userId);
-            //$user = $form->user;
-            //$smarty->assign('vgWortCardNo', $user->getData('vgWortCardNo'));
             }
         }
         $templateFile = method_exists($this, 'getTemplateResource')
@@ -429,9 +431,7 @@ class VgwortPlugin extends GenericPlugin {
     {
         $form =& $args[0];
         $vars =& $args[1];
-
         switch ($hookName) {
-            case 'userdetailsform::readuservars':
             case 'authorform::readuservars':
                 $vars[] = 'vgWortCardNo';
                 break;
@@ -439,7 +439,11 @@ class VgwortPlugin extends GenericPlugin {
                 $vars = array_merge($vars, self::DATA_FIELDS);
                 $vars[] = 'vgWortAssignRemoveCheckbox';
                 break;
+            case 'userdetailsform::readuservars':
+                $vars[] = 'vgWortCardNo';
         }
+        $request = Application::get()->getRequest();
+        $form->setData('vgWortCardNo', $request->getUserVar('vgWortCardNo'));
         return false;
     }
 
@@ -452,19 +456,9 @@ class VgwortPlugin extends GenericPlugin {
     function metadataExecute($hookName, $args): bool
     {
         $form =& $args[0];
-        $user = NULL;
-
-        switch ($hookName) {
-            case 'userdetailsform::execute':
-                $user = $form->user;
-                break;
-            case 'authorform::execute':
-                $user = $form->getAuthor();
-                break;
-            case 'publicprofileform::execute':
-                $user =& $args[2];
-                break;
-        }
+        $vgWortCardNo = $form->getData('vgWortCardNo');
+        $user = $form->user;
+        $user->setData('vgWortCardNo', intval($vgWortCardNo));
         return false;
     }
 
@@ -884,15 +878,6 @@ class VgwortPlugin extends GenericPlugin {
                 $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
                 $pixelTagDao->updateObject($pixelTag);
             }
-//            error_log("pixelTagStatus: " .$pixelTag->getStatus());
-//            error_log("==================================");
-//            error_log("==================================");
-//            error_log("==================================");
-//            error_log("==================================");
-//            error_log("==================================");
-//            error_log("==================================");
-//            error_log("==================================");
-//            error_log("==================================");
             $pubObject->setData('vgWort::pixeltag::status', $pixelTag->getStatus());
         } else {
             $vgWortAssignPixel = $pubObject->getData('vgWort::pixeltag::assign') ? 1 : 0;
