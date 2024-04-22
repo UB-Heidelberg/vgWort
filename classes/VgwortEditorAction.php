@@ -3,11 +3,14 @@
 namespace APP\plugins\generic\vgwort\classes;
 
 use APP\core\Application;
+use APP\notification\Notification;
 use APP\notification\NotificationManager;
 use APP\plugins\generic\vgwort\classes\PixelTag;
 use APP\core\Services;
 use APP\facades\Repo;
 
+use APP\plugins\generic\vgwort\VgwortPlugin;
+use APP\publicationFormat\PublicationFormat;
 use PKP\db\DAORegistry;
 
 use \GuzzleHttp\Exception\ClientException;
@@ -24,7 +27,11 @@ define('CHECK_AUTHOR_TEST', 'https://tom-test.vgwort.de/api/external/metis/rest/
 define('NEW_MESSAGE_TEST', 'https://tom-test.vgwort.de/api/external/metis/rest/message/v1.0/newMessageRequest');
 
 class VGWortEditorAction {
-    var $_plugin;
+    /**
+     * The plugin object
+     * @var VgwortPlugin
+     */
+    var VgwortPlugin $_plugin;
 
     function __construct($plugin) {
         $this->_plugin = $plugin;
@@ -172,7 +179,7 @@ class VGWortEditorAction {
                 $pixelTag->setStatus(PixelTag::STATUS_REGISTERED_ACTIVE);
                 $pixelTagDao->updateObject($pixelTag);
                 $this->_removeNotification($pixelTag);
-                $notificationType = NOTIFICATION_TYPE_SUCCESS;
+                $notificationType = Notification::NOTIFICATION_TYPE_SUCCESS;
                 $notificationMsg = __('plugins.generic.vgwort.pixelTags.register.success');
             }
         }
@@ -180,7 +187,7 @@ class VGWortEditorAction {
             $pixelTag->setMessage($errorMsg);
             $pixelTagDao->updateObject($pixelTag);
             $this->_createNotification($request, $pixelTag);
-            $notificationType = NOTIFICATION_TYPE_FORM_ERROR;
+            $notificationType = Notification::NOTIFICATION_TYPE_ERROR;
             $notificationMsg = $errorMsg;
         }
 
@@ -216,19 +223,20 @@ class VGWortEditorAction {
         $httpClient = Application::get()->getHttpClient();
         $data = [
             'cardNumber' => $cardNo,
-            'surName' => $lastName
+            'surName' => $lastName,
         ];
 
         try {
-            if (!$vgWortPlugin->requirementsFulfilled()) {
-                return [false, __('plugins.generic.vgwort.requirementsRequired')];
-            }
+            // TODO: requirements!!!
+            //if (!$vgWortPlugin->requirementsFulfilled()) {
+            //    return [false, __('plugins.generic.vgwort.requirementsRequired')];
+            //}
 
             $response = $httpClient->request(
                 'GET',
                 $vgWortAPI,
                 [
-                    'json' => $data,
+                    'query' => $data,
                     'auth' => [$vgWortUserId, $vgWortUserPassword]
                 ]
             );
@@ -243,7 +251,7 @@ class VGWortEditorAction {
                 $responseBodyAsString = $response->getBody()->getContents();
                 $statusCode = $response->getStatusCode();
                 $reasonPhrase = $response->getReasonPhrase();
-                return [false, __('plugins.generic.vgwort.order.errorCode') . $reasonPhrase];
+                return [false, __('plugins.generic.vgwort.order.errorCode') . $reasonPhrase . ', body: ' . $responseBodyAsString];
             }
         }
         catch (\GuzzleHttp\Exception\ServerException $e) {
@@ -252,7 +260,7 @@ class VGWortEditorAction {
                 $responseBodyAsString = $response->getBody()->getContents();
                 $statusCode = $response->getStatusCode();
                 $reasonPhrase = $response->getReasonPhrase();
-                return [false, $reasonPhrase];
+                return [false, $reasonPhrase . ', body: ' . $responseBodyAsString];
             }
         }
         catch (Exception $e) {
@@ -287,12 +295,12 @@ class VGWortEditorAction {
         $locale = $submission->getLocale();
 
         // Get authors and translators
-        $authors = Repo::author()->getCollector()->filterByPublicationIds([$publication->getId()])->getMany(); 
+        $authors = Repo::author()->getCollector()->filterByPublicationIds([$publication->getId()])->getMany();
         $contributors = iterator_to_array($authors);
         //$submissionAuthors = array_filter($contributors, [$this, '_filterChapterAuthors']);
         //$submissionTranslators = array_filter($contributors, [$this, '_filterTranslators']);
         //assert(!empty($submissionAuthors) || !empty($submissionTranslators));
-        assert($contributors); 
+        assert($contributors);
         $participants = [];
         if (!empty($contributors)) {
             foreach ($contributors as $author) {
@@ -343,9 +351,8 @@ class VGWortEditorAction {
 
         $dispatcher = Application::get()->getDispatcher();
         foreach ($supportedPublicationFormats as $supportedPublicationFormat) {
-            $submissionFiles = iterator_to_array($vgWortPlugin->getSubmissionFiles($submission, $supportedPublicationFormat));
+            $submissionFiles = $vgWortPlugin->getSubmissionFiles($submission, $supportedPublicationFormat);
             $bookManuscriptFile = $vgWortPlugin->getBookManuscriptFile($submissionFiles);
-            //error_log("publicationFormatFile" . var_export($bookManuscriptFile,true));
 
             if (!isset($bookManuscriptFile)) { continue; }
             $url = $dispatcher->url(
@@ -367,7 +374,7 @@ class VGWortEditorAction {
         }
 
         $publicationFormatFile = $bookManuscriptFile;
-        
+
         $content = Services::get('file')->fs->read($publicationFormatFile->getData('path'));
         $publicationFormatFileType = $publicationFormatFile->getData('mimetype');
 
@@ -455,14 +462,14 @@ class VGWortEditorAction {
      * @param PublicationFormat $publicationFormat
      * @return bool
      */
-    function _checkPublicationFormatSupported($publicationFormat)
+    function _checkPublicationFormatSupported(PublicationFormat $publicationFormat): bool
     {
         if ($publicationFormat->getPhysicalFormat()) {
             return false;
         }
         $submission = $this->getSubmissionByPublicationFormat($publicationFormat);
         $submissionFiles = $this->_plugin->getSubmissionFiles($submission, $publicationFormat);
-        if (!$submissionFiles) {
+        if ($submissionFiles->isEmpty()) {
             return false;
         }
         $megaByte = 1024*1024;
@@ -474,6 +481,7 @@ class VGWortEditorAction {
             }
             return $this->_plugin->getSupportedFileTypes($submissionFile->getData('mimetype'));
         }
+        return false;
     }
 
 //    /**

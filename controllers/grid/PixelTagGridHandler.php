@@ -8,6 +8,7 @@ use APP\plugins\generic\vgwort\controllers\grid\PixelTagGridRow;
 use APP\plugins\generic\vgwort\classes\VgwortEditorAction;
 use APP\plugins\generic\vgwort\classes\PixelTag;
 
+use APP\template\TemplateManager;
 use PKP\plugins\PluginRegistry;
 use PKP\linkAction\LinkAction;
 use PKP\form\Form;
@@ -277,7 +278,7 @@ class PixelTagGridHandler extends GridHandler
     function statusMessage($args, $request)
     {
         $vgWortPlugin = PluginRegistry::getPlugin('generic', VGWORT_PLUGIN_NAME);
-        $pixelTagId = $request->getUserVar('pixelTagId');
+        $pixelTagId = $request->getUserVar('pixelTag');
         $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
         $pixelTag = $pixelTagDao->getById($pixelTagId);
         //error_log("[PixelTagGridHandler] pixelTagId " . var_export($pixelTagId,true));

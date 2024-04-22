@@ -87,19 +87,19 @@ msgid "plugins.generic.vgWort.notification.vgWortErrorExists"
 msgstr "Es existieren fehlgeschlagene Zählpixelmeldungen."
 
 
-msgid "plugins.generic.vgWort.check.errorCode"
+msgid "plugins.generic.vgwort.check.errorCode"
 msgstr "Ein nicht handhabbarer Fehler ({$faultcode}/{$faultstring}) ist beim überprüfen der Autoren aufgetreten."
 
-msgid "plugins.generic.vgWort.check.notValid"
+msgid "plugins.generic.vgwort.check.notValid"
 msgstr "Der/die Autor/in oder der/die Übersetzer/in {$surName} hat keine gültige VG-Wort-Karteinummer."
 
-msgid "plugins.generic.vgWort.check.errorCode100"
+msgid "plugins.generic.vgwort.check.errorCode100"
 msgstr "Ein technisches Problem ist aufgetreten. Bitte versuchen Sie es später noch einmal."
 
-msgid "plugins.generic.vgWort.check.galleyRequired"
+msgid "plugins.generic.vgwort.check.galleyRequired"
 msgstr "Es wird eine PDF-, HTML- oder EPUB-Fahne benötigt, die kleiner als 15MB ist."
 
-msgid "plugins.generic.vgWort.check.articleNotPublished"
+msgid "plugins.generic.vgwort.check.articleNotPublished"
 msgstr "Der Artikel ist nicht veröffentlicht."
 
 
@@ -142,7 +142,7 @@ msgid "plugins.generic.vgwort.cardNo"
 msgstr "VG-Wort-Karteinummer"
 
 msgid "plugins.generic.vgwort.cardNo.description"
-msgstr "(Ihre VG-Wort-Karteinummer)"
+msgstr "Wird für die Meldung des Werks vor einer Ausschüttung an den Autor benötigt"
 
 msgid "plugins.generic.vgwort.cardNoValid"
 msgstr "Bitte geben Sie eine gültige Karteinummer (2-7 Ziffern) an."

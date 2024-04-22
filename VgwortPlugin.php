@@ -18,6 +18,8 @@ use APP\publicationFormat\PublicationFormat;
 use APP\submission\Submission;
 use Exception;
 use IteratorAggregate;
+use PKP\components\forms\FieldText;
+use PKP\components\forms\FormComponent;
 use PKP\form\validation\FormValidatorRegExp;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
@@ -89,6 +91,9 @@ class VgwortPlugin extends GenericPlugin {
             Hook::add('TemplateManager::display', [$this, 'handleTemplateDisplay']);
             Hook::add('TemplateManager::fetch', [$this, 'handleTemplateFetch']);
 
+
+            Hook::add('Form::config::before', [$this, 'contributorFormCallback']);
+
             // Create new table that lists ordered pixel tags.
             Hook::add('LoadComponentHandler', [$this, 'setupGridHandler']);
 
@@ -101,18 +106,13 @@ class VgwortPlugin extends GenericPlugin {
             Hook::add('userdetailsform::initdata', [$this, 'metadataInitData']);
 
             // Read user's input.
-            Hook::add('authorform::readuservars', [$this, 'metadataReadUserVars']);
             Hook::add('userdetailsform::readuservars', [$this, 'metadataReadUserVars']);
             Hook::add('chapterform::readuservars', [$this, 'metadataReadUserVars']);
 
             // Execute forms.
-            Hook::add('authorform::execute', [$this, 'metadataExecute']);
             Hook::add('userdetailsform::execute', [$this, 'metadataExecute']);
             Hook::add('chapterform::execute', [$this, 'handleChapterFormExecute']);
             Hook::add('chapterform::display', [$this, 'handleChapterFormDisplay']);
-
-            // Add validation check for VG Wort Card No. field.
-            Hook::add('authorform::Constructor', [$this, 'addCheck']);
 
             // Add VG Wort pixel to PDF JS Viewer.
             Hook::add('Templates::Common::Footer::PageFooter', [$this, 'insertPixelTagJSViewer']);
@@ -311,6 +311,22 @@ class VgwortPlugin extends GenericPlugin {
         return false;
     }
 
+    public function contributorFormCallback(string $hookName, FormComponent $form): bool
+    {
+        // Only modify the metadata form
+        if (!defined('FORM_CONTRIBUTOR') || $form->id !== FORM_CONTRIBUTOR) {
+            return HOOK::CONTINUE;
+        }
+
+        $form->addField(new FieldText('vgWortCardNo', [
+            'label' => __('plugins.generic.vgwort.cardNo'),
+            'description' => __('plugins.generic.vgwort.cardNo.description'),
+
+        ]));
+
+        return Hook::CONTINUE;
+    }
+
     // TODO: Still not possible to use addToSchema() callback
     // for extending chapter properties.
     /**
@@ -382,9 +398,6 @@ class VgwortPlugin extends GenericPlugin {
                     $user = $form->user;
                 }
                 break;
-            case 'authorform::initdata':
-                $user = $form->getAuthor();
-                break;
             case 'publicprofileform::initdata':
                 $user = $form->getUser();
                 break;
@@ -409,10 +422,6 @@ class VgwortPlugin extends GenericPlugin {
 
         if ($hookName == 'Common::UserDetails::AdditionalItems') {
             $smarty->assign('vgWortFieldTitle', 'plugins.generic.vgwort.cardNo');
-            $userId = $smarty->smarty->tpl_vars['userId']->value;
-            if ($userId) {
-                $user = Repo::user()->get($userId);
-            }
         }
         $templateFile = method_exists($this, 'getTemplateResource')
             ? $this->getTemplateResource('vgWortCardNo.tpl')
@@ -1025,9 +1034,11 @@ class VgwortPlugin extends GenericPlugin {
     /**
      * Get submission file of full document.
      *
-     * @param array $submissionFiles
+     * @param IteratorAggregate $submissionFiles
+     * @return SubmissionFile|null
+     * @throws Exception
      */
-    function getBookManuscriptFile(IteratorAggregate $submissionFiles)
+    function getBookManuscriptFile(IteratorAggregate $submissionFiles): ?SubmissionFile
     {
         // Get genre ID that corresponds to the book manuscript.
         $genreDao = DAORegistry::getDAO('GenreDAO');
