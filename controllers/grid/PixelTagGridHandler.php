@@ -2,6 +2,7 @@
 
 namespace APP\plugins\generic\vgwort\controllers\grid;
 
+use APP\plugins\generic\vgwort\classes\PixelTagDAO;
 use APP\plugins\generic\vgwort\VgwortPlugin;
 use APP\plugins\generic\vgwort\controllers\grid\PixelTagGridCellProvider;
 use APP\plugins\generic\vgwort\controllers\grid\PixelTagGridRow;
@@ -237,16 +238,20 @@ class PixelTagGridHandler extends GridHandler
         return [$search, $column, $statusId];
     }
 
+    /**
+     * @throws \Exception
+     */
     function loadData($request, $filter)
     {
         $sortBy = 'pixel_tag_id';
         $sortDirection = SORT_DIRECTION_DESC;
+        /** @var PixelTagDAO $pixelTagDao */
         $pixelTagDao = DAORegistry::getDAO('PixelTagDAO');
         $context = $request->getContext();
         $rangeInfo = $this->getGridRangeInfo($request, $this->getId());
         list($search, $column, $statusId) = $this->getFilterValues($filter);
 
-        $pixelTags = $pixelTagDao->getPixelTagsByContextId(
+        return $pixelTagDao->getPixelTagsByContextId(
             $context->getId(),
             $column,
             $search,
@@ -255,8 +260,6 @@ class PixelTagGridHandler extends GridHandler
             $sortBy,
             $sortDirection
         );
-
-        return $pixelTags->toAssociativeArray();
     }
 
     function pixelTagsTab($args, $request)

@@ -194,11 +194,8 @@ class PixelTagDAO extends DAO {
 
         $sql .= ' context_id = ?' . ($sortBy ? (' ORDER BY ' . $sortBy . ' ' . $this->getDirectionMapping($sortDirection)) : '');
         $paramArray[] = (int) $contextId;
-
         $result = $this->retrieveRange($sql, $paramArray, $rangeInfo);
-        $returner = new DAOResultFactory($result, $this, '_fromRow');
-
-        return $returner;
+        return new DAOResultFactory($result, $this, '_fromRow', ['id'], $sql, $paramArray, $rangeInfo);
     }
 
     function getPixelTagBySubmissionId($submissionId, $contextId = NULL)
