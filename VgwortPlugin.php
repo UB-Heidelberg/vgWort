@@ -291,11 +291,11 @@ class VgwortPlugin extends GenericPlugin {
                 ];
                 $schema->properties->{"vgWort::pixeltag::assign"} = (object) [
                     'type' => 'boolean',
-                    'validation' => ['NULLable']
+                    'validation' => ['nullable']
                 ];
                 $schema->properties->{"vgWort::pixeltag::remove"} = (object) [
                     'type' => 'boolean',
-                    'validation' => ['NULLable']
+                    'validation' => ['nullable']
                 ];
                 $schema->properties->{"vgWort::pixeltag::status"} = (object) [
                     'type' => 'string',
@@ -304,7 +304,8 @@ class VgwortPlugin extends GenericPlugin {
             case 'Schema::get::author':
             case 'Schema::get::user':
                 $schema->properties->{"vgWortCardNo"} = (object) [
-                    'type' => 'integer'
+                    'type' => 'integer',
+                    'validation' => ['nullable']
                 ];
                 break;
         }
@@ -321,7 +322,7 @@ class VgwortPlugin extends GenericPlugin {
         $form->addField(new FieldText('vgWortCardNo', [
             'label' => __('plugins.generic.vgwort.cardNo'),
             'description' => __('plugins.generic.vgwort.cardNo.description'),
-
+            'isRequired' => false
         ]));
 
         return Hook::CONTINUE;
