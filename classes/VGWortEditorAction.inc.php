@@ -59,7 +59,7 @@ class VGWortEditorAction {
 	        if (!$vgWortPlugin->requirementsFulfilled()) {
 	            return [false, __('plugins.generic.vgWort.requirementsRequired')];
 	        }
-			$response = $this->uploadJSON(PIXEL_SERVICE_TEST, $vgWortUserId, $vgWortUserPassword, $data);
+			$response = $this->uploadJSON($vgWortAPI, $vgWortUserId, $vgWortUserPassword, $data);
 			$response_body = $response[1];
 			$response_json = json_decode($response_body,true);
 			return [true, json_decode($response_json)];
