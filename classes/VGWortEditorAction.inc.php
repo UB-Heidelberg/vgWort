@@ -54,7 +54,7 @@ class VGWortEditorAction {
 		}
 
 	    $data = ['count' => 1];
-	
+
 	    try {
 	        if (!$vgWortPlugin->requirementsFulfilled()) {
 	            return [false, __('plugins.generic.vgWort.requirementsRequired')];
@@ -225,18 +225,18 @@ class VGWortEditorAction {
 		if ($vgWortTestAPI) {
 			$vgWortAPI = CHECK_AUTHOR_TEST;
 		}
-	
+
 		$httpClient = Application::get()->getHttpClient();
 	        $data = [
 	            'cardNumber' => $cardNo,
 	            'surName' => $lastName
 	        ];
-	
+
 	        try {
 	            if (!$vgWortPlugin->requirementsFulfilled()) {
 	                return [false, __('plugins.generic.vgWort.requirementsRequired')];
 	            }
-	
+
 	            $response = $httpClient->request(
 	                'GET',
 	                $vgWortAPI,
@@ -245,9 +245,9 @@ class VGWortEditorAction {
 	                    'auth' => [$vgWortUserId, $vgWortUserPassword]
 	                ]
 	            );
-	
+
 	            $response = json_decode(json_encode($response->getBody()), false);
-	
+
 	            return [true, $response];
 	        }
 	        catch (\GuzzleHttp\Exception\ClientException $e) {
@@ -330,12 +330,12 @@ class VGWortEditorAction {
 	        if ($vgWortTestAPI) {
 	            $vgWortAPI = NEW_MESSAGE_TEST;
 	        }
-		
+
 		$vgWortPlugin->import('classes.PixelTag');
 	        $submission = $pixelTag->getSubmission();
-	
+
 	        $locale = $submission->getLocale();
-	
+
 	        // Get authors and translators
 	        $contributors = $submission->getAuthors();
 	        $authors = array_filter($contributors, [$this, '_filterAuthors']);
@@ -343,7 +343,7 @@ class VGWortEditorAction {
 		//error_log("VGWORT: contributors: " . var_export($contributors,true));
 		//error_log("VGWORT: authors: " . var_export($authors,true));
 		//error_log("VGWORT: translators: " . var_export($translators,true));
-		
+
 		assert(!empty($authors) || !empty($translators));
 	        $participants = [];
 	        if (!empty($authors)) {
@@ -387,7 +387,6 @@ class VGWortEditorAction {
 
 		// get supported galleys
 		$galleys = (array) $submission->getGalleys();
-		error_log("VGWORT: " . var_export($galleys,true));
 		$supportedGalleys = array_filter($galleys, array($vgWortPlugin, 'galleySupported'));
 		// construct the VG Wort webranges for the supported galleys
 		$webranges = [];
@@ -505,7 +504,7 @@ class VGWortEditorAction {
 	            "reproductionRight" => true,
 	            "rightsGrantedConfirmation" => true
 	        ];
-		
+
 		//try {
 			if (!$vgWortPlugin->requirementsFulfilled()) {
                 		return [false, __('plugins.generic.vgWort.requirementsRequired')];
@@ -630,8 +629,8 @@ class VGWortEditorAction {
 //					))
 //				);
 //			}
-		
-	
+
+
 
 	/**
 	 * Check if the contributor is an author.
@@ -762,7 +761,7 @@ class VGWortEditorAction {
 
 	function uploadJSON($url, $username, $password, $data) {
 	    $curl = curl_init();
-	
+
 	    curl_setopt($curl, CURLOPT_UPLOAD, true);
 	    curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: application/json', 'Content-Type: application/json']);
 	    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -783,7 +782,7 @@ class VGWortEditorAction {
 		$statusCode = $response['message']['errorcode'];
 		$reasonPhrase = $response['message']['errormsg'];
 	    }
-	    
+
 		if (!empty($errors)) return [false, __('plugins.generic.vgWort.order.errorCode') . $reasonPhrase];
 	    curl_close($curl);
 
